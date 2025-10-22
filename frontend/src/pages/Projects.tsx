@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, DollarSign, User, Download } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +9,7 @@ import ProjectForm from '@/components/ProjectForm';
 import ProjectDetail from '@/components/ProjectDetail';
 
 const Projects: React.FC = () => {
+  const navigate = useNavigate();
   const { projects, deleteProject } = useData();
   const { hasRole } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,8 +30,7 @@ const Projects: React.FC = () => {
   };
 
   const handleView = (project: any) => {
-    setSelectedProject(project);
-    setShowDetail(true);
+    navigate(`/projects/${project.id}`);
   };
 
   const handleDelete = (projectId: string) => {
@@ -151,7 +152,11 @@ const Projects: React.FC = () => {
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProjects.map((project) => (
-          <div key={project.id} className="card hover:shadow-md transition-shadow">
+          <div 
+            key={project.id} 
+            className="card hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => handleView(project)}
+          >
             <div className="card-body">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -163,7 +168,7 @@ const Projects: React.FC = () => {
                     {PROJECT_STATUSES.find(s => s.value === project.status)?.label}
                   </span>
                 </div>
-                <div className="flex space-x-1">
+                <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => handleView(project)}
                     className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"

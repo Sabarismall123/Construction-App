@@ -9,6 +9,7 @@ import WebLayout from '@/layouts/WebLayout';
 import MobileLayout from '@/layouts/MobileLayout';
 import Dashboard from '@/pages/Dashboard';
 import Projects from '@/pages/Projects';
+import ProjectStatus from '@/pages/ProjectStatus';
 import Tasks from '@/pages/Tasks';
 import Issues from '@/pages/Issues';
 import Resources from '@/pages/Resources';
@@ -44,6 +45,7 @@ function AppRoutes() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/:projectId" element={<ProjectStatus />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/issues" element={<Issues />} />
         <Route path="/resources" element={<Resources />} />

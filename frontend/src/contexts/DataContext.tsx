@@ -85,8 +85,9 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 // Generate empty data for testing with real data
-const generateEmptyData = () => {
+const generateEmptyData = (): DataContextType => {
   return {
+    // Data
     projects: [],
     tasks: [],
     issues: [],
@@ -99,17 +100,111 @@ const generateEmptyData = () => {
     materialReturns: [],
     materialConsumptions: [],
     notifications: [],
-    users: []
+    users: [],
+    
+    // Project actions
+    addProject: () => {},
+    updateProject: () => {},
+    deleteProject: () => {},
+    
+    // Task actions
+    addTask: () => {},
+    updateTask: () => {},
+    deleteTask: () => {},
+    addTaskComment: () => {},
+    
+    // Issue actions
+    addIssue: () => {},
+    updateIssue: () => {},
+    deleteIssue: () => {},
+    addIssueComment: () => {},
+    
+    // Resource actions
+    addResource: () => {},
+    updateResource: () => {},
+    deleteResource: () => {},
+    
+    // Petty Cash actions
+    addPettyCash: () => {},
+    updatePettyCash: () => {},
+    deletePettyCash: () => {},
+    
+    // Attendance actions
+    addAttendance: () => {},
+    updateAttendance: () => {},
+    deleteAttendance: () => {},
+    
+    // Inventory actions
+    addInventoryItem: () => {},
+    updateInventoryItem: () => {},
+    deleteInventoryItem: () => {},
+    
+    // Site Transfer actions
+    addSiteTransfer: () => {},
+    updateSiteTransfer: () => {},
+    deleteSiteTransfer: () => {},
+    
+    // Material Issue actions
+    addMaterialIssue: () => {},
+    updateMaterialIssue: () => {},
+    deleteMaterialIssue: () => {},
+    
+    // Material Return actions
+    addMaterialReturn: () => {},
+    updateMaterialReturn: () => {},
+    deleteMaterialReturn: () => {},
+    
+    // Material Consumption actions
+    addMaterialConsumption: () => {},
+    updateMaterialConsumption: () => {},
+    deleteMaterialConsumption: () => {},
+    
+    // User actions
+    addUser: () => {},
+    updateUser: () => {},
+    deleteUser: () => {},
+    
+    // Notification actions
+    addNotification: () => {},
+    markNotificationAsRead: () => {},
+    deleteNotification: () => {},
+    
+    // Utility functions
+    getDashboardStats: () => ({
+      totalProjects: 0,
+      activeProjects: 0,
+      completedProjects: 0,
+      totalTasks: 0,
+      completedTasks: 0,
+      pendingTasks: 0,
+      totalIssues: 0,
+      openIssues: 0,
+      resolvedIssues: 0,
+      totalResources: 0,
+      allocatedResources: 0,
+      availableResources: 0,
+      totalAttendance: 0,
+      presentToday: 0,
+      attendanceRate: 0,
+      totalInventory: 0,
+      lowStockItems: 0,
+      totalPettyCash: 0,
+      pendingApprovals: 0,
+      highPriorityIssues: 0,
+      totalExpenses: 0,
+      monthlyExpenses: 0
+    })
   };
 };
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [data, setData] = useState(() => generateEmptyData());
+  const [data, setData] = useState<DataContextType>(() => generateEmptyData());
 
   // Load data from API and localStorage on mount
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('🔄 Loading data from API...');
         // Try to load projects, tasks, issues, and attendance from API first
         const [projectsResponse, tasksResponse, issuesResponse, attendanceResponse] = await Promise.all([
           apiService.getProjects(),
@@ -118,26 +213,34 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           apiService.getAttendance()
         ]);
         
-        const projects = projectsResponse.data || projectsResponse;
-        const tasks = tasksResponse.data || tasksResponse;
-        const issues = issuesResponse.data || issuesResponse;
-        const attendance = attendanceResponse.data || attendanceResponse;
+        console.log('📊 API Responses:', {
+          projects: projectsResponse,
+          tasks: tasksResponse,
+          issues: issuesResponse,
+          attendance: attendanceResponse
+        });
+        
+        const projects = (projectsResponse as any).data || projectsResponse;
+        const tasks = (tasksResponse as any).data || tasksResponse;
+        const issues = (issuesResponse as any).data || issuesResponse;
+        const attendance = (attendanceResponse as any).data || attendanceResponse;
         
         setData(prev => ({
           ...prev,
           projects: projects.map((p: any) => ({
             ...p,
             id: p._id || p.id,
-            createdAt: formatDate(new Date(p.createdAt || Date.now())),
-            updatedAt: formatDate(new Date(p.updatedAt || Date.now()))
+            createdAt: new Date(p.createdAt || Date.now()),
+            updatedAt: new Date(p.updatedAt || Date.now())
           })),
           tasks: tasks.map((t: any) => ({
             ...t,
             id: t._id || t.id,
             projectId: t.projectId?._id || t.projectId || t.projectId,
             assignedTo: t.assignedTo?._id || t.assignedTo || t.assignedTo,
-            createdAt: formatDate(new Date(t.createdAt || Date.now())),
-            updatedAt: formatDate(new Date(t.updatedAt || Date.now())),
+            attachments: t.attachments || [], // Ensure attachments array is preserved
+            createdAt: new Date(t.createdAt || Date.now()),
+            updatedAt: new Date(t.updatedAt || Date.now()),
             comments: t.comments || []
           })),
           issues: issues.map((i: any) => ({
@@ -146,8 +249,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             projectId: i.projectId?._id || i.projectId || i.projectId,
             assignedTo: i.assignedTo?._id || i.assignedTo || i.assignedTo,
             reportedBy: i.reportedBy?._id || i.reportedBy || i.reportedBy,
-            createdAt: formatDate(new Date(i.createdAt || Date.now())),
-            updatedAt: formatDate(new Date(i.updatedAt || Date.now())),
+            dueDate: i.dueDate ? new Date(i.dueDate) : new Date(),
+            createdAt: new Date(i.createdAt || Date.now()),
+            updatedAt: new Date(i.updatedAt || Date.now()),
             comments: i.comments || []
           })),
           attendance: attendance.map((a: any) => ({
@@ -160,16 +264,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }))
         }));
       } catch (error) {
-        console.error('Failed to load data from API:', error);
+        console.error('❌ Failed to load data from API:', error);
+        console.log('🔄 Falling back to localStorage...');
         // Fallback to localStorage
         const savedData = localStorage.getItem('construction-management-data');
         if (savedData) {
           try {
             const parsedData = JSON.parse(savedData);
+            console.log('📦 Loaded data from localStorage:', parsedData);
             setData(parsedData);
           } catch (error) {
             console.error('Error loading saved data:', error);
           }
+        } else {
+          console.log('📭 No saved data found in localStorage');
         }
       }
     };
@@ -187,8 +295,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await apiService.createProject(project);
       const newProject: Project = {
-        ...response.data,
-        id: response.data._id || response.data.id,
+        ...(response as any).data,
+        id: (response as any).data._id || (response as any).data.id,
         createdAt: formatDate(new Date()),
         updatedAt: formatDate(new Date())
       };
@@ -212,7 +320,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setData(prev => ({
         ...prev,
         projects: prev.projects.map(p => 
-          p.id === id ? { ...p, ...response.data, updatedAt: formatDate(new Date()) } : p
+          p.id === id ? { ...p, ...(response as any).data, updatedAt: formatDate(new Date()) } : p
         )
       }));
     } catch (error) {
@@ -253,8 +361,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await apiService.createTask(task);
       const newTask: Task = {
-        ...response.data,
-        id: response.data._id || response.data.id,
+        ...(response as any).data,
+        id: (response as any).data._id || (response as any).data.id,
+        attachments: (response as any).data.attachments || [],
         createdAt: formatDate(new Date()),
         updatedAt: formatDate(new Date()),
         comments: []
@@ -266,6 +375,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const newTask: Task = {
         ...task,
         id: generateId(),
+        attachments: task.attachments || [],
         createdAt: formatDate(new Date()),
         updatedAt: formatDate(new Date()),
         comments: []
@@ -274,13 +384,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const updateTask = (id: string, task: Partial<Task>) => {
-    setData(prev => ({
-      ...prev,
-      tasks: prev.tasks.map(t => 
-        t.id === id ? { ...t, ...task, updatedAt: formatDate(new Date()) } : t
-      )
-    }));
+  const updateTask = async (id: string, task: Partial<Task>) => {
+    try {
+      const response = await apiService.updateTask(id, task);
+      setData(prev => ({
+        ...prev,
+        tasks: prev.tasks.map(t => 
+          t.id === id ? { 
+            ...t, 
+            ...(response as any).data, 
+            attachments: (response as any).data.attachments || t.attachments,
+            updatedAt: formatDate(new Date()) 
+          } : t
+        )
+      }));
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        tasks: prev.tasks.map(t => 
+          t.id === id ? { ...t, ...task, updatedAt: formatDate(new Date()) } : t
+        )
+      }));
+    }
   };
 
   const deleteTask = (id: string) => {
@@ -312,8 +439,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await apiService.createIssue(issue);
       const newIssue: Issue = {
-        ...response.data,
-        id: response.data._id || response.data.id,
+        ...(response as any).data,
+        id: (response as any).data._id || (response as any).data.id,
         createdAt: formatDate(new Date()),
         updatedAt: formatDate(new Date()),
         comments: []
@@ -424,22 +551,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addAttendance = async (attendance: Omit<Attendance, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const response = await apiService.createAttendance(attendance);
-      const newAttendance: Attendance = {
-        ...response.data,
-        id: response.data._id || response.data.id,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+        const newAttendance: Attendance = {
+          ...(response as any).data,
+          id: (response as any).data._id || (response as any).data.id,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
       setData(prev => ({ ...prev, attendance: [...prev.attendance, newAttendance] }));
     } catch (error) {
       console.error('Failed to create attendance:', error);
       // Fallback to localStorage if API fails
-      const newAttendance: Attendance = {
-        ...attendance,
-        id: generateId(),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+        const newAttendance: Attendance = {
+          ...attendance,
+          id: generateId(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
       setData(prev => ({ ...prev, attendance: [...prev.attendance, newAttendance] }));
     }
   };
@@ -449,18 +576,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await apiService.updateAttendance(id, attendance);
       setData(prev => ({
         ...prev,
-        attendance: prev.attendance.map(a => 
-          a.id === id ? { ...a, ...response.data, updatedAt: new Date() } : a
-        )
+          attendance: prev.attendance.map(a => 
+            a.id === id ? { ...a, ...(response as any).data, updatedAt: new Date() } : a
+          )
       }));
     } catch (error) {
       console.error('Failed to update attendance:', error);
       // Fallback to localStorage if API fails
       setData(prev => ({
         ...prev,
-        attendance: prev.attendance.map(a => 
-          a.id === id ? { ...a, ...attendance, updatedAt: new Date() } : a
-        )
+          attendance: prev.attendance.map(a => 
+            a.id === id ? { ...a, ...attendance, updatedAt: new Date() } : a
+          )
       }));
     }
   };
@@ -510,12 +637,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Site Transfer actions
-  const addSiteTransfer = (transfer: Omit<SiteTransfer, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addSiteTransfer = (transfer: Omit<SiteTransfer, 'id' | 'createdAt'>) => {
     const newTransfer: SiteTransfer = {
       ...transfer,
       id: generateId(),
-      createdAt: formatDate(new Date()),
-      updatedAt: formatDate(new Date())
+      createdAt: formatDate(new Date())
     };
     setData(prev => ({ ...prev, siteTransfers: [...prev.siteTransfers, newTransfer] }));
   };
@@ -524,7 +650,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setData(prev => ({
       ...prev,
       siteTransfers: prev.siteTransfers.map(st => 
-        st.id === id ? { ...st, ...transfer, updatedAt: formatDate(new Date()) } : st
+        st.id === id ? { ...st, ...transfer } : st
       )
     }));
   };
@@ -537,12 +663,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Material Issue actions
-  const addMaterialIssue = (issue: Omit<MaterialIssue, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addMaterialIssue = (issue: Omit<MaterialIssue, 'id' | 'createdAt'>) => {
     const newIssue: MaterialIssue = {
       ...issue,
       id: generateId(),
-      createdAt: formatDate(new Date()),
-      updatedAt: formatDate(new Date())
+      createdAt: formatDate(new Date())
     };
     setData(prev => ({ ...prev, materialIssues: [...prev.materialIssues, newIssue] }));
   };
@@ -551,7 +676,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setData(prev => ({
       ...prev,
       materialIssues: prev.materialIssues.map(mi => 
-        mi.id === id ? { ...mi, ...issue, updatedAt: formatDate(new Date()) } : mi
+        mi.id === id ? { ...mi, ...issue } : mi
       )
     }));
   };
@@ -564,12 +689,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Material Return actions
-  const addMaterialReturn = (returnItem: Omit<MaterialReturn, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addMaterialReturn = (returnItem: Omit<MaterialReturn, 'id' | 'createdAt'>) => {
     const newReturn: MaterialReturn = {
       ...returnItem,
       id: generateId(),
-      createdAt: formatDate(new Date()),
-      updatedAt: formatDate(new Date())
+      createdAt: formatDate(new Date())
     };
     setData(prev => ({ ...prev, materialReturns: [...prev.materialReturns, newReturn] }));
   };
@@ -578,7 +702,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setData(prev => ({
       ...prev,
       materialReturns: prev.materialReturns.map(mr => 
-        mr.id === id ? { ...mr, ...returnItem, updatedAt: formatDate(new Date()) } : mr
+        mr.id === id ? { ...mr, ...returnItem } : mr
       )
     }));
   };
@@ -591,12 +715,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Material Consumption actions
-  const addMaterialConsumption = (consumption: Omit<MaterialConsumption, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addMaterialConsumption = (consumption: Omit<MaterialConsumption, 'id' | 'createdAt'>) => {
     const newConsumption: MaterialConsumption = {
       ...consumption,
       id: generateId(),
-      createdAt: formatDate(new Date()),
-      updatedAt: formatDate(new Date())
+      createdAt: formatDate(new Date())
     };
     setData(prev => ({ ...prev, materialConsumptions: [...prev.materialConsumptions, newConsumption] }));
   };
@@ -605,7 +728,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setData(prev => ({
       ...prev,
       materialConsumptions: prev.materialConsumptions.map(mc => 
-        mc.id === id ? { ...mc, ...consumption, updatedAt: formatDate(new Date()) } : mc
+        mc.id === id ? { ...mc, ...consumption } : mc
       )
     }));
   };
@@ -618,12 +741,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // User actions
-  const addUser = (user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addUser = (user: Omit<User, 'id'>) => {
     const newUser: User = {
       ...user,
-      id: generateId(),
-      createdAt: formatDate(new Date()),
-      updatedAt: formatDate(new Date())
+      id: generateId()
     };
     setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
   };
@@ -632,7 +753,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setData(prev => ({
       ...prev,
       users: prev.users.map(u => 
-        u.id === id ? { ...u, ...user, updatedAt: formatDate(new Date()) } : u
+        u.id === id ? { ...u, ...user } : u
       )
     }));
   };
@@ -645,12 +766,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Notification actions
-  const addNotification = (notification: Omit<Notification, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addNotification = (notification: Omit<Notification, 'id' | 'createdAt'>) => {
     const newNotification: Notification = {
       ...notification,
       id: generateId(),
-      createdAt: formatDate(new Date()),
-      updatedAt: formatDate(new Date())
+      createdAt: formatDate(new Date())
     };
     setData(prev => ({ ...prev, notifications: [...prev.notifications, newNotification] }));
   };
@@ -659,7 +779,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setData(prev => ({
       ...prev,
       notifications: prev.notifications.map(n => 
-        n.id === id ? { ...n, read: true, updatedAt: formatDate(new Date()) } : n
+        n.id === id ? { ...n, read: true } : n
       )
     }));
   };

@@ -1,10 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Upload, File, Image, Trash2, Download } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { Issue } from '@/types';
 import { formatDate, validateDateRange } from '@/utils';
 import { ISSUE_STATUSES, PRIORITIES } from '@/constants';
 import { toast } from 'react-hot-toast';
+import { apiService } from '@/services/api';
+
+interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  file: File;
+  originalName: string;
+  mimetype: string;
+}
 
 interface IssueFormProps {
   issue?: Issue;
@@ -25,6 +37,8 @@ const IssueForm: React.FC<IssueFormProps> = ({ issue, onClose }) => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (issue) {
@@ -76,6 +90,94 @@ const IssueForm: React.FC<IssueFormProps> = ({ issue, onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // File upload functions
+  const handleFileUpload = async (files: FileList) => {
+    const newAttachments: FileAttachment[] = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Validate file type
+      const allowedTypes = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf', 'application/msword', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain', 'application/zip', 'application/x-rar-compressed'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`File type ${file.type} is not supported.`);
+        continue;
+      }
+      
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`File ${file.name} is too large. Maximum size is 10MB.`);
+        continue;
+      }
+
+      try {
+        // Upload file to backend
+        const issueId = issue?.id;
+        console.log('📤 Uploading file for issue:', issueId);
+        const response = await apiService.uploadFile(file, undefined, formData.projectId, issueId);
+        
+        if (response.success) {
+          const fileAttachment: FileAttachment = {
+            id: response.data.id,
+            name: response.data.originalName,
+            size: response.data.size,
+            type: response.data.mimetype,
+            url: apiService.getFileUrl(response.data.id),
+            file: file,
+            originalName: response.data.originalName,
+            mimetype: response.data.mimetype
+          };
+
+          newAttachments.push(fileAttachment);
+        } else {
+          toast.error(`Failed to upload ${file.name}`);
+        }
+      } catch (error) {
+        console.error('File upload error:', error);
+        toast.error(`Failed to upload ${file.name}`);
+      }
+    }
+
+    if (newAttachments.length > 0) {
+      setAttachments(prev => [...prev, ...newAttachments]);
+      toast.success(`${newAttachments.length} file(s) uploaded successfully`);
+    }
+  };
+
+  const removeAttachment = async (attachmentId: string) => {
+    try {
+      await apiService.deleteFile(attachmentId);
+      setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+      toast.success('File removed successfully');
+    } catch (error) {
+      console.error('Error removing file:', error);
+      toast.error('Failed to remove file');
+    }
+  };
+
+  const getFileIcon = (mimetype: string) => {
+    if (mimetype.startsWith('image/')) {
+      return <Image className="h-4 w-4" />;
+    }
+    return <File className="h-4 w-4" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -94,7 +196,7 @@ const IssueForm: React.FC<IssueFormProps> = ({ issue, onClose }) => {
         assignedTo: formData.assignedTo.trim(),
         dueDate: formData.dueDate,
         description: formData.description.trim(),
-        attachments: formData.attachments
+        attachments: attachments.map(att => att.id)
       };
 
       if (issue) {
@@ -265,6 +367,79 @@ const IssueForm: React.FC<IssueFormProps> = ({ issue, onClose }) => {
                   placeholder="Enter issue description"
                 />
                 {errors.description && <p className="form-error">{errors.description}</p>}
+              </div>
+
+              {/* File Upload Section */}
+              <div className="form-group">
+                <label className="label">Attachments</label>
+                <div className="space-y-4">
+                  {/* File Upload Area */}
+                  <div
+                    className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Click to upload or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">
+                      Images, PDF, DOC, XLS, TXT, ZIP (MAX. 10MB each)
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                      onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {/* Attached Files List */}
+                  {attachments.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Attached Files ({attachments.length})
+                      </p>
+                      {attachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                        >
+                          <div className="flex items-center space-x-3">
+                            {getFileIcon(attachment.mimetype)}
+                            <div>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {attachment.originalName}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {formatFileSize(attachment.size)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => window.open(attachment.url, '_blank')}
+                              className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded"
+                              title="Download file"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeAttachment(attachment.id)}
+                              className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded"
+                              title="Remove file"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

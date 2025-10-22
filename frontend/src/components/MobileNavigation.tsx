@@ -18,12 +18,16 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ currentPath }) => {
     return currentPath.startsWith(path);
   };
 
-  return (
-    <nav className="mobile-nav">
-      <div className="flex justify-around">
-        {NAVIGATION_ITEMS.slice(0, 5).map((item) => {
-          if (!hasPermission(item.key)) return null;
+  // Get the most important navigation items for mobile
+  const mobileNavItems = NAVIGATION_ITEMS.filter(item => 
+    hasPermission(item.key) && 
+    ['dashboard', 'projects', 'tasks', 'issues', 'attendance'].includes(item.key)
+  );
 
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
+      <div className="flex justify-around py-2">
+        {mobileNavItems.map((item) => {
           const isActive = isItemActive(item.path);
 
           return (
@@ -31,12 +35,14 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ currentPath }) => {
               key={item.key}
               to={item.path}
               className={cn(
-                'mobile-nav-item',
-                isActive && 'mobile-nav-item-active'
+                'flex flex-col items-center justify-center px-3 py-2 text-xs font-medium transition-colors',
+                isActive
+                  ? 'text-primary-600'
+                  : 'text-gray-500 hover:text-gray-700'
               )}
             >
               <span className="text-lg mb-1">{item.icon}</span>
-              <span>{item.label}</span>
+              <span className="truncate">{item.label}</span>
             </Link>
           );
         })}

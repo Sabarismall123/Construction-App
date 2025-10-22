@@ -59,25 +59,25 @@ const Dashboard: React.FC = () => {
     icon: React.ReactNode;
     color: string;
   }> = ({ title, value, change, icon, color }) => (
-    <div className="stat-card">
+    <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="stat-label">{title}</p>
-          <p className="stat-value">{value}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-gray-500 truncate">{title}</p>
+          <p className="text-lg font-bold text-gray-900 truncate">{value}</p>
           {change !== undefined && (
             <div className="flex items-center mt-1">
               {change >= 0 ? (
-                <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
+                <ArrowUpRight className="h-4 w-4 text-green-500 mr-1 flex-shrink-0" />
               ) : (
-                <ArrowDownRight className="h-4 w-4 text-red-500 mr-1" />
+                <ArrowDownRight className="h-4 w-4 text-red-500 mr-1 flex-shrink-0" />
               )}
-              <span className={change >= 0 ? 'stat-change-positive' : 'stat-change-negative'}>
+              <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'} truncate`}>
                 {Math.abs(change)}%
               </span>
             </div>
           )}
         </div>
-        <div className={`p-3 rounded-lg ${color}`}>
+        <div className={`p-2 rounded-lg ${color} flex-shrink-0 ml-2`}>
           {icon}
         </div>
       </div>
@@ -85,7 +85,7 @@ const Dashboard: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="w-full px-4 py-4 space-y-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">
@@ -96,31 +96,31 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats Grid - Responsive */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          title="Total Projects"
+          title="Projects"
           value={stats.totalProjects}
           change={12}
           icon={<Building2 className="h-6 w-6 text-white" />}
           color="bg-blue-500"
         />
         <StatCard
-          title="Active Tasks"
+          title="Tasks"
           value={stats.pendingTasks}
           change={-5}
           icon={<CheckSquare className="h-6 w-6 text-white" />}
           color="bg-green-500"
         />
         <StatCard
-          title="Open Issues"
+          title="Issues"
           value={stats.openIssues}
           change={8}
           icon={<AlertTriangle className="h-6 w-6 text-white" />}
           color="bg-red-500"
         />
         <StatCard
-          title="Total Expenses"
+          title="Expenses"
           value={formatCurrency(stats.totalExpenses)}
           change={-2}
           icon={<DollarSign className="h-6 w-6 text-white" />}
@@ -128,162 +128,85 @@ const Dashboard: React.FC = () => {
         />
       </div>
 
-      {/* Additional Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Attendance Rate"
-          value={formatPercentage(stats.attendanceRate)}
-          icon={<Clock className="h-6 w-6 text-white" />}
-          color="bg-purple-500"
-        />
-        <StatCard
-          title="Resources Allocated"
-          value={`${stats.allocatedResources}/${stats.totalResources}`}
-          icon={<Users className="h-6 w-6 text-white" />}
-          color="bg-indigo-500"
-        />
-        <StatCard
-          title="Low Stock Items"
-          value={stats.lowStockItems}
-          icon={<Package className="h-6 w-6 text-white" />}
-          color="bg-orange-500"
-        />
-        <StatCard
-          title="Monthly Expenses"
-          value={formatCurrency(stats.monthlyExpenses)}
-          icon={<TrendingUp className="h-6 w-6 text-white" />}
-          color="bg-teal-500"
-        />
+      {/* Additional Stats - 2 columns on mobile */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 text-center">
+          <Clock className="h-8 w-8 text-purple-500 mx-auto mb-3" />
+          <p className="text-sm text-gray-500 mb-2">Attendance</p>
+          <p className="text-2xl font-bold text-gray-900">{formatPercentage(stats.attendanceRate)}</p>
+        </div>
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 text-center">
+          <Users className="h-8 w-8 text-indigo-500 mx-auto mb-3" />
+          <p className="text-sm text-gray-500 mb-2">Resources</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.allocatedResources}/{stats.totalResources}</p>
+        </div>
+      </div>
+
+      {/* Quick Actions - 2 columns on mobile */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+        <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <button className="flex flex-col items-center justify-center p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+            <Building2 className="h-6 w-6 mb-2" />
+            <span className="text-sm font-medium">Project</span>
+          </button>
+          <button className="flex flex-col items-center justify-center p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors">
+            <CheckSquare className="h-6 w-6 mb-2" />
+            <span className="text-sm font-medium">Task</span>
+          </button>
+          <button className="flex flex-col items-center justify-center p-4 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors">
+            <AlertTriangle className="h-6 w-6 mb-2" />
+            <span className="text-sm font-medium">Issue</span>
+          </button>
+          <button className="flex flex-col items-center justify-center p-4 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors">
+            <DollarSign className="h-6 w-6 mb-2" />
+            <span className="text-sm font-medium">Expense</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Recent Activity Section */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
+        <div className="space-y-3">
+          {projects.slice(0, 5).map((project) => (
+            <div key={project.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center">
+                <div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-primary-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-gray-900">{project.name}</p>
+                  <p className="text-sm text-gray-500">{project.client}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{project.progress}%</p>
+                <p className="text-sm text-gray-500">{project.status}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Project Progress Chart */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Project Progress</h3>
-          </div>
-          <div className="card-body">
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={projectProgressData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="progress" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Project Progress</h3>
+          <div className="h-64 flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <Building2 className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+              <p>Project Progress Chart</p>
             </div>
           </div>
         </div>
-
-        {/* Task Status Distribution */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Task Status Distribution</h3>
-          </div>
-          <div className="card-body">
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={taskStatusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {taskStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Task Status</h3>
+          <div className="h-64 flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <CheckSquare className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+              <p>Task Status Chart</p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Monthly Expenses and Issue Priority */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Expenses Trend */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Monthly Expenses Trend</h3>
-          </div>
-          <div className="card-body">
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyExpensesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Amount']} />
-                  <Area type="monotone" dataKey="amount" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Issue Priority Distribution */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Issue Priority Distribution</h3>
-          </div>
-          <div className="card-body">
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={issuePriorityData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {issuePriorityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Recent Activity</h3>
-        </div>
-        <div className="card-body">
-          <div className="space-y-4">
-            {projects.slice(0, 5).map((project) => (
-              <div key={project.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-primary-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-900">{project.name}</p>
-                    <p className="text-sm text-gray-500">{project.client}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{project.progress}%</p>
-                  <p className="text-sm text-gray-500">{project.status}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </div>

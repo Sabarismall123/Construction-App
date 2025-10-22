@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, User, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, User, AlertTriangle, Paperclip } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate, searchItems, filterItems } from '@/utils';
@@ -174,7 +174,12 @@ const Issues: React.FC = () => {
                 <tr key={issue.id} className="table-row">
                   <td className="table-cell">
                     <div>
-                      <p className="font-medium text-gray-900">{issue.title}</p>
+                      <div className="flex items-center">
+                        <p className="font-medium text-gray-900">{issue.title}</p>
+                        {issue.attachments && issue.attachments.length > 0 && (
+                          <Paperclip className="h-4 w-4 text-gray-400 ml-2" title={`${issue.attachments.length} attachment(s)`} />
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500 line-clamp-1">{issue.description}</p>
                     </div>
                   </td>

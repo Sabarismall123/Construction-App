@@ -1,21 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import MobileHeader from '@/components/MobileHeader';
 import MobileNavigation from '@/components/MobileNavigation';
+import MobileSidebar from '@/components/MobileSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 
 const MobileLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header */}
-      <MobileHeader user={user} />
+      <MobileHeader user={user} onMenuClick={() => setSidebarOpen(true)} />
+
+      {/* Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <MobileSidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+      />
 
       {/* Page content */}
       <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 pb-16">
-        <div className="px-4 py-4">
+        <div className="w-full max-w-full">
           {children || <Outlet />}
         </div>
       </main>

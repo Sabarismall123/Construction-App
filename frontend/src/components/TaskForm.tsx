@@ -1,18 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Upload, File, Image, Trash2, Download } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { Task } from '@/types';
 import { formatDate, validateDateRange } from '@/utils';
 import { TASK_STATUSES, PRIORITIES } from '@/constants';
 import { toast } from 'react-hot-toast';
+import { apiService } from '@/services/api';
+import PhotoCapture from './PhotoCapture';
+import LocationTracker from './LocationTracker';
 
 interface TaskFormProps {
   task?: Task;
   onClose: () => void;
 }
 
+interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  file?: File;
+  originalName?: string;
+  mimetype?: string;
+}
+
 const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
   const { addTask, updateTask, projects } = useData();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     title: '',
     assignedTo: '',
@@ -23,6 +38,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
     projectId: '',
     attachments: [] as string[]
   });
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -94,7 +110,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
         dueDate: formData.dueDate,
         description: formData.description.trim(),
         projectId: formData.projectId,
-        attachments: formData.attachments
+        attachments: attachments.map(a => a.id) // Store file IDs
       };
 
       if (task) {
@@ -121,6 +137,103 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newAttachments: FileAttachment[] = [];
+    
+    for (const file of Array.from(files)) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`File ${file.name} is too large. Maximum size is 10MB.`);
+        continue;
+      }
+
+      // Validate file type
+      const allowedTypes = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf', 'application/msword', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain', 'application/zip', 'application/x-rar-compressed'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`File type ${file.type} is not supported.`);
+        continue;
+      }
+
+      try {
+        // Upload file to backend
+        const taskId = task?.id || formData.projectId;
+        console.log('📤 Uploading file for task/project:', taskId);
+        const response = await apiService.uploadFile(file, taskId);
+        
+        if (response.success) {
+          const fileAttachment: FileAttachment = {
+            id: response.data.id,
+            name: response.data.originalName,
+            size: response.data.size,
+            type: response.data.mimetype,
+            url: apiService.getFileUrl(response.data.id),
+            file: file,
+            originalName: response.data.originalName,
+            mimetype: response.data.mimetype
+          };
+
+          newAttachments.push(fileAttachment);
+        } else {
+          toast.error(`Failed to upload file ${file.name}`);
+        }
+      } catch (error) {
+        toast.error(`Failed to upload file ${file.name}`);
+        console.error('File upload error:', error);
+      }
+    }
+
+    if (newAttachments.length > 0) {
+      setAttachments(prev => [...prev, ...newAttachments]);
+      toast.success(`${newAttachments.length} file(s) uploaded successfully`);
+    }
+  };
+
+  const removeAttachment = async (id: string) => {
+    try {
+      // Delete file from backend
+      await apiService.deleteFile(id);
+      
+      setAttachments(prev => {
+        const attachment = prev.find(a => a.id === id);
+        if (attachment) {
+          URL.revokeObjectURL(attachment.url);
+        }
+        return prev.filter(a => a.id !== id);
+      });
+      
+      toast.success('File removed successfully');
+    } catch (error) {
+      toast.error('Failed to remove file');
+      console.error('File removal error:', error);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) {
+      return <Image className="h-4 w-4 text-blue-500" />;
+    }
+    return <File className="h-4 w-4 text-gray-500" />;
   };
 
   return (
@@ -265,6 +378,108 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
                   placeholder="Enter task description"
                 />
                 {errors.description && <p className="form-error">{errors.description}</p>}
+              </div>
+
+              {/* Location Tracking */}
+              <LocationTracker 
+                onLocationUpdate={(location) => {
+                  console.log('Location updated:', location);
+                }}
+                className="mb-6"
+              />
+
+              {/* Photo Capture with Timestamps */}
+              <PhotoCapture
+                onPhotosCaptured={(photos) => {
+                  console.log('Photos captured:', photos);
+                  // Handle photo capture - you can integrate this with your existing file upload logic
+                }}
+                projectId={formData.projectId}
+                taskId={task?.id}
+                maxPhotos={5}
+                className="mb-6"
+              />
+
+              {/* File Upload Section */}
+              <div className="form-group">
+                <label className="label">
+                  Attachments
+                </label>
+                <div className="space-y-4">
+                  {/* Upload Button */}
+                  <div className="flex items-center justify-center w-full">
+                    <label
+                      htmlFor="file-upload"
+                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:border-gray-600"
+                    >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" />
+                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Images, PDF, DOC, XLS, TXT, ZIP (MAX. 10MB each)
+                        </p>
+                      </div>
+                      <input
+                        id="file-upload"
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        multiple
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                        onChange={handleFileUpload}
+                      />
+                    </label>
+                  </div>
+
+                  {/* File List */}
+                  {attachments.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Attached Files ({attachments.length})
+                      </p>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {attachments.map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                          >
+                            <div className="flex items-center space-x-3">
+                              {getFileIcon(attachment.type)}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {attachment.name}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {formatFileSize(attachment.size)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => window.open(attachment.url, '_blank')}
+                                className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                title="Preview/Download"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeAttachment(attachment.id)}
+                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                title="Remove file"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

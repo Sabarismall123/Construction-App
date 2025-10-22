@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, User, MessageSquare, Download } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, User, MessageSquare, Download, Paperclip } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate, searchItems, filterItems } from '@/utils';
@@ -211,7 +211,17 @@ const Tasks: React.FC = () => {
                 <tr key={task.id} className="table-row">
                   <td className="table-cell">
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{task.title}</p>
+                      <div className="flex items-center space-x-2">
+                        <p className="font-medium text-gray-900 dark:text-white">{task.title}</p>
+                        {task.attachments && task.attachments.length > 0 && (
+                          <div className="flex items-center space-x-1">
+                            <Paperclip className="h-3 w-3 text-gray-400" />
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {task.attachments.length}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500 line-clamp-1">{task.description}</p>
                     </div>
                   </td>

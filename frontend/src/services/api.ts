@@ -3,7 +3,8 @@ const API_BASE_URL = 'http://localhost:5000/api';
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('construction_user');
+    const token = user ? 'mock-token' : null; // Use mock token for demo
     
     const config: RequestInit = {
       headers: {
@@ -190,6 +191,92 @@ class ApiService {
 
   async getAttendanceByProject(projectId: string) {
     return this.request(`/attendance/project/${projectId}`);
+  }
+
+  // File upload methods
+  async uploadFile(file: File, taskId?: string, projectId?: string, issueId?: string): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (taskId) formData.append('taskId', taskId);
+    if (projectId) formData.append('projectId', projectId);
+    if (issueId) formData.append('issueId', issueId);
+
+    const user = localStorage.getItem('construction_user');
+    const token = user ? 'mock-token' : null;
+    const response = await fetch(`${API_BASE_URL}/files/upload`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async uploadMultipleFiles(files: File[], taskId?: string, projectId?: string, issueId?: string): Promise<any> {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    if (taskId) formData.append('taskId', taskId);
+    if (projectId) formData.append('projectId', projectId);
+    if (issueId) formData.append('issueId', issueId);
+
+    const user = localStorage.getItem('construction_user');
+    const token = user ? 'mock-token' : null;
+    const response = await fetch(`${API_BASE_URL}/files/upload-multiple`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async getFile(fileId: string): Promise<Blob> {
+    const user = localStorage.getItem('construction_user');
+    const token = user ? 'mock-token' : null;
+    const response = await fetch(`${API_BASE_URL}/files/${fileId}`, {
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.blob();
+  }
+
+  async getFileInfo(fileId: string): Promise<any> {
+    return this.request(`/files/${fileId}/info`);
+  }
+
+  async deleteFile(fileId: string): Promise<any> {
+    return this.request(`/files/${fileId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getFilesByTask(taskId: string): Promise<any> {
+    return this.request(`/files/task/${taskId}`);
+  }
+
+  // Helper method to get file URL
+  getFileUrl(fileId: string): string {
+    const user = localStorage.getItem('construction_user');
+    const token = user ? 'mock-token' : null;
+    return `${API_BASE_URL}/files/${fileId}${token ? `?token=${token}` : ''}`;
   }
 }
 

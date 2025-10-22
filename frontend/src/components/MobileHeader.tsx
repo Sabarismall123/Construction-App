@@ -6,9 +6,10 @@ import { getInitials } from '@/utils';
 
 interface MobileHeaderProps {
   user: any;
+  onMenuClick?: () => void;
 }
 
-const MobileHeader: React.FC<MobileHeaderProps> = ({ user }) => {
+const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
   const { logout } = useAuth();
   const { notifications, markNotificationAsRead } = useData();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -23,17 +24,28 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user }) => {
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="flex items-center justify-between h-14 px-4">
+      <div className="flex items-center justify-between h-14 px-4 min-w-0">
         <div className="flex items-center">
-          <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
+          {/* Hamburger Menu */}
+          <button
+            onClick={onMenuClick}
+            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 mr-3"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          
+          {/* Logo */}
+          <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-sm">CM</span>
           </div>
-          <span className="ml-2 text-lg font-semibold text-gray-900">
+          
+          {/* App Title */}
+          <span className="ml-3 text-lg font-semibold text-gray-900 whitespace-nowrap">
             Construction
           </span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 flex-shrink-0">
           {/* Search */}
           <button className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100">
             <Search className="h-5 w-5" />
