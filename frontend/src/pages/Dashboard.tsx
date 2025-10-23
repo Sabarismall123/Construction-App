@@ -85,7 +85,7 @@ const Dashboard: React.FC = () => {
   );
 
   return (
-    <div className="w-full px-4 py-4 space-y-6">
+    <div className="mobile-content w-full px-4 py-4 space-y-6 min-h-full">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">

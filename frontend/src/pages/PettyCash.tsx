@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, DollarSign, Receipt, TrendingUp } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, DollarSign, Receipt, TrendingUp, X } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate, formatCurrency, searchItems, filterItems } from '@/utils';
 import { PETTY_CASH_CATEGORIES } from '@/constants';
+import MobileDropdown from '@/components/MobileDropdown';
 
 const PettyCash: React.FC = () => {
   const { pettyCash, projects, deletePettyCash } = useData();
@@ -40,10 +41,37 @@ const PettyCash: React.FC = () => {
 
   const totalAmount = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
+  // Prepare dropdown options
+  const categoryOptions = [
+    { value: '', label: 'All Categories' },
+    ...PETTY_CASH_CATEGORIES.map(category => ({
+      value: category.value,
+      label: category.label
+    }))
+  ];
+
+  const projectOptions = [
+    { value: '', label: 'All Projects' },
+    ...projects.map(project => ({
+      value: project.id,
+      label: project.name
+    }))
+  ];
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setCategoryFilter('');
+    setProjectFilter('');
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  const hasActiveFilters = searchTerm || categoryFilter || projectFilter || dateFrom || dateTo;
+
   return (
-    <div className="space-y-6">
+    <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Petty Cash</h1>
           <p className="mt-1 text-sm text-gray-500">
@@ -53,7 +81,7 @@ const PettyCash: React.FC = () => {
         {hasRole(['admin', 'manager', 'site_supervisor']) && (
           <button
             onClick={() => alert('Add Expense form would open here')}
-            className="btn-primary mt-4 sm:mt-0"
+            className="w-full btn-primary flex items-center justify-center"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Expense
@@ -62,7 +90,7 @@ const PettyCash: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4">
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
@@ -101,158 +129,166 @@ const PettyCash: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="card-body">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <div className="relative">
-                <div className="search-icon">
-                  <Search className="h-5 w-5" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search expenses..."
-                  className="search-input"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+      <div className="card-body p-4">
+        <div className="flex flex-col space-y-4">
+          {/* Search */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
-            <div>
-              <select
-                className="input"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
+            <input
+              type="text"
+              placeholder="Search expenses..."
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Filters Row */}
+          <div className="flex flex-col space-y-3">
+            <MobileDropdown
+              options={categoryOptions}
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              placeholder="All Categories"
+              className="w-full"
+            />
+            <MobileDropdown
+              options={projectOptions}
+              value={projectFilter}
+              onChange={setProjectFilter}
+              placeholder="All Projects"
+              className="w-full"
+            />
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              placeholder="From Date"
+            />
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              placeholder="To Date"
+            />
+          </div>
+
+          {/* Debug Info and Clear Filters */}
+          <div className="flex flex-col space-y-2">
+            <div className="text-sm text-gray-600">
+              Showing {filteredExpenses.length} of {pettyCash.length} expenses
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="w-full btn-secondary flex items-center justify-center"
               >
-                <option value="">All Categories</option>
-                {PETTY_CASH_CATEGORIES.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <select
-                className="input"
-                value={projectFilter}
-                onChange={(e) => setProjectFilter(e.target.value)}
-              >
-                <option value="">All Projects</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <input
-                type="date"
-                className="input"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                placeholder="From Date"
-              />
-            </div>
-            <div>
-              <input
-                type="date"
-                className="input"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                placeholder="To Date"
-              />
-            </div>
+                <X className="h-4 w-4 mr-2" />
+                Clear all filters
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Expenses List */}
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead className="table-header">
-              <tr>
-                <th className="table-header-cell">Date</th>
-                <th className="table-header-cell">Description</th>
-                <th className="table-header-cell">Paid To</th>
-                <th className="table-header-cell">Category</th>
-                <th className="table-header-cell">Project</th>
-                <th className="table-header-cell">Amount</th>
-                <th className="table-header-cell">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="table-body">
-              {filteredExpenses.map((expense) => (
-                <tr key={expense.id} className="table-row">
-                  <td className="table-cell">
-                    <span className="text-sm text-gray-900">{formatDate(expense.date)}</span>
-                  </td>
-                  <td className="table-cell">
-                    <div>
-                      <p className="font-medium text-gray-900">{expense.description}</p>
-                      {expense.attachment && (
-                        <p className="text-xs text-gray-500">📎 Attachment</p>
-                      )}
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <span className="text-sm text-gray-900">{expense.paidTo}</span>
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex items-center">
-                      <span className="mr-2">{getCategoryIcon(expense.category)}</span>
-                      <span className="text-sm text-gray-900">
-                        {PETTY_CASH_CATEGORIES.find(c => c.value === expense.category)?.label}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <span className="text-sm text-gray-900">{getProjectName(expense.projectId)}</span>
-                  </td>
-                  <td className="table-cell">
-                    <span className="font-medium text-gray-900">{formatCurrency(expense.amount)}</span>
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex items-center space-x-2">
-                      {hasRole(['admin', 'manager', 'site_supervisor']) && (
-                        <>
-                          <button
-                            onClick={() => alert('Edit Expense form would open here')}
-                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => deletePettyCash(expense.id)}
-                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredExpenses.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-state-icon">
-              <Receipt className="h-12 w-12" />
+      <div className="card-body p-4">
+        <div className="flex flex-col space-y-3">
+          {filteredExpenses.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <Receipt className="h-6 w-6 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No expenses found</h3>
+              <p className="text-sm text-gray-500">
+                {searchTerm || categoryFilter || projectFilter || dateFrom || dateTo
+                  ? 'Try adjusting your search or filter criteria.'
+                  : 'Get started by adding your first expense.'}
+              </p>
             </div>
-            <h3 className="empty-state-title">No expenses found</h3>
-            <p className="empty-state-description">
-              {searchTerm || categoryFilter || projectFilter || dateFrom || dateTo
-                ? 'Try adjusting your search or filter criteria.'
-                : 'Get started by adding your first expense.'}
-            </p>
-          </div>
-        )}
+          ) : (
+            <div className="space-y-4">
+              {filteredExpenses.map((expense) => (
+                <div key={expense.id} className="card hover:shadow-md transition-shadow">
+                  <div className="card-body p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {expense.description}
+                        </h3>
+                        <p className="text-xs text-gray-500 truncate">
+                          Paid to: {expense.paidTo}
+                        </p>
+                      </div>
+                      <div className="flex space-x-1 flex-shrink-0">
+                        {hasRole(['admin', 'manager', 'site_supervisor']) && (
+                          <>
+                            <button
+                              onClick={() => alert('Edit Expense form would open here')}
+                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => deletePettyCash(expense.id)}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700 mr-2">Date:</span>
+                        <span className="text-xs text-gray-900">
+                          {formatDate(expense.date)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700 mr-2">Category:</span>
+                        <div className="flex items-center">
+                          <span className="mr-1">{getCategoryIcon(expense.category)}</span>
+                          <span className="text-xs text-gray-900">
+                            {PETTY_CASH_CATEGORIES.find(c => c.value === expense.category)?.label}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700 mr-2">Project:</span>
+                        <span className="text-xs text-gray-900 truncate flex-1 text-right">
+                          {getProjectName(expense.projectId)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700 mr-2">Amount:</span>
+                        <span className="text-sm font-bold text-gray-900">
+                          {formatCurrency(expense.amount)}
+                        </span>
+                      </div>
+
+                      {expense.attachment && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-700 mr-2">Attachment:</span>
+                          <span className="text-xs text-gray-500">📎 Available</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

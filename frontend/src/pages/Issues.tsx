@@ -6,6 +6,7 @@ import { formatDate, searchItems, filterItems } from '@/utils';
 import { ISSUE_STATUSES, PRIORITIES } from '@/constants';
 import IssueForm from '@/components/IssueForm';
 import IssueDetail from '@/components/IssueDetail';
+import MobileDropdown from '@/components/MobileDropdown';
 
 const Issues: React.FC = () => {
   const { issues, projects, deleteIssue } = useData();
@@ -70,19 +71,19 @@ const Issues: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Issues</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Issues</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Track and manage project issues and problems
           </p>
         </div>
         {hasRole(['admin', 'manager', 'site_supervisor']) && (
           <button
             onClick={() => setShowForm(true)}
-            className="btn-primary mt-4 sm:mt-0"
+            className="w-full btn-primary flex items-center justify-center"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Issue
@@ -92,157 +93,149 @@ const Issues: React.FC = () => {
 
       {/* Filters */}
       <div className="card">
-        <div className="card-body">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <div className="relative">
-                <div className="search-icon">
-                  <Search className="h-5 w-5" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search issues..."
-                  className="search-input"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+        <div className="card-body p-4">
+          <div className="flex flex-col space-y-3">
+            <div className="relative">
+              <div className="search-icon">
+                <Search className="h-5 w-5" />
               </div>
+              <input
+                type="text"
+                placeholder="Search issues..."
+                className="search-input"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
             <div>
-              <select
-                className="input"
+              <MobileDropdown
+                options={[
+                  { value: '', label: 'All Statuses' },
+                  ...ISSUE_STATUSES.map(status => ({
+                    value: status.value,
+                    label: status.label
+                  }))
+                ]}
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                {ISSUE_STATUSES.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setStatusFilter}
+                placeholder="All Statuses"
+              />
             </div>
             <div>
-              <select
-                className="input"
+              <MobileDropdown
+                options={[
+                  { value: '', label: 'All Priorities' },
+                  ...PRIORITIES.map(priority => ({
+                    value: priority.value,
+                    label: priority.label
+                  }))
+                ]}
                 value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-              >
-                <option value="">All Priorities</option>
-                {PRIORITIES.map((priority) => (
-                  <option key={priority.value} value={priority.value}>
-                    {priority.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setPriorityFilter}
+                placeholder="All Priorities"
+              />
             </div>
             <div>
-              <select
-                className="input"
+              <MobileDropdown
+                options={[
+                  { value: '', label: 'All Projects' },
+                  ...projects.map(project => ({
+                    value: project.id,
+                    label: project.name
+                  }))
+                ]}
                 value={projectFilter}
-                onChange={(e) => setProjectFilter(e.target.value)}
-              >
-                <option value="">All Projects</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setProjectFilter}
+                placeholder="All Projects"
+              />
             </div>
           </div>
         </div>
       </div>
 
       {/* Issues List */}
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead className="table-header">
-              <tr>
-                <th className="table-header-cell">Issue</th>
-                <th className="table-header-cell">Project</th>
-                <th className="table-header-cell">Assigned To</th>
-                <th className="table-header-cell">Priority</th>
-                <th className="table-header-cell">Status</th>
-                <th className="table-header-cell">Due Date</th>
-                <th className="table-header-cell">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="table-body">
-              {filteredIssues.map((issue) => (
-                <tr key={issue.id} className="table-row">
-                  <td className="table-cell">
-                    <div>
-                      <div className="flex items-center">
-                        <p className="font-medium text-gray-900">{issue.title}</p>
-                        {issue.attachments && issue.attachments.length > 0 && (
-                          <Paperclip className="h-4 w-4 text-gray-400 ml-2" title={`${issue.attachments.length} attachment(s)`} />
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500 line-clamp-1">{issue.description}</p>
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <span className="text-sm text-gray-900">{getProjectName(issue.projectId)}</span>
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex items-center">
-                      <div className="h-6 w-6 bg-gray-300 rounded-full flex items-center justify-center mr-2">
-                        <span className="text-xs font-medium text-gray-600">
-                          {issue.assignedTo?.charAt(0) || 'U'}
+      <div className="space-y-4">
+        {filteredIssues.map((issue) => (
+          <div key={issue.id} className="card hover:shadow-md transition-shadow">
+            <div className="card-body p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
+                      {issue.title}
+                    </h3>
+                    {issue.attachments && issue.attachments.length > 0 && (
+                      <div className="flex items-center space-x-1 flex-shrink-0">
+                        <Paperclip className="h-3 w-3 text-gray-400" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {issue.attachments.length}
                         </span>
                       </div>
-                      <span className="text-sm text-gray-900">User {issue.assignedTo}</span>
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <span className={`priority-badge ${getPriorityColor(issue.priority)}`}>
-                      {PRIORITIES.find(p => p.value === issue.priority)?.label}
-                    </span>
-                  </td>
-                  <td className="table-cell">
-                    <span className={`status-badge ${getStatusColor(issue.status)}`}>
-                      {ISSUE_STATUSES.find(s => s.value === issue.status)?.label}
-                    </span>
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {formatDate(issue.dueDate)}
-                    </div>
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex items-center space-x-2">
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500 line-clamp-2 mb-2">{issue.description}</p>
+                </div>
+                <div className="flex space-x-1 flex-shrink-0">
+                  <button
+                    onClick={() => handleView(issue)}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  {hasRole(['admin', 'manager', 'site_supervisor']) && (
+                    <>
                       <button
-                        onClick={() => handleView(issue)}
-                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                        onClick={() => handleEdit(issue)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Edit className="h-4 w-4" />
                       </button>
-                      {hasRole(['admin', 'manager', 'site_supervisor']) && (
-                        <>
-                          <button
-                            onClick={() => handleEdit(issue)}
-                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(issue.id)}
-                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
+                      <button
+                        onClick={() => handleDelete(issue.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center text-sm text-gray-500">
+                  <span className="font-medium text-gray-700 mr-2">Project:</span>
+                  <span className="truncate">{getProjectName(issue.projectId)}</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-500">
+                  <span className="font-medium text-gray-700 mr-2">Assigned:</span>
+                  <div className="flex items-center">
+                    <div className="h-5 w-5 bg-gray-300 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                      <span className="text-xs font-medium text-gray-600">
+                        {issue.assignedTo?.charAt(0) || 'U'}
+                      </span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    <span className="truncate">User {issue.assignedTo}</span>
+                  </div>
+                </div>
+                <div className="flex items-center text-sm text-gray-500">
+                  <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">{formatDate(issue.dueDate)}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-3">
+                <div className="flex space-x-2">
+                  <span className={`priority-badge ${getPriorityColor(issue.priority)}`}>
+                    {PRIORITIES.find(p => p.value === issue.priority)?.label}
+                  </span>
+                  <span className={`status-badge ${getStatusColor(issue.status)}`}>
+                    {ISSUE_STATUSES.find(s => s.value === issue.status)?.label}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
 
         {filteredIssues.length === 0 && (
           <div className="empty-state">

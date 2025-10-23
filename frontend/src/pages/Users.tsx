@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Download, User as UserIcon, Shield, Mail, Calendar } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Download, User as UserIcon, Shield, Mail, Calendar, X } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate, searchItems, filterItems } from '@/utils';
 import { ROLES } from '@/constants';
 import UserForm from '@/components/UserForm';
+import MobileDropdown from '@/components/MobileDropdown';
 
 const Users: React.FC = () => {
   const { users, deleteUser } = useData();
@@ -82,20 +83,36 @@ const Users: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  // Prepare dropdown options
+  const roleOptions = [
+    { value: '', label: 'All Roles' },
+    ...Object.entries(ROLES).map(([key, label]) => ({
+      value: key,
+      label: label
+    }))
+  ];
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setRoleFilter('');
+  };
+
+  const hasActiveFilters = searchTerm || roleFilter;
+
   return (
-    <div className="space-y-6">
+    <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Users</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Manage user accounts, roles, and permissions
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
+        <div className="flex flex-col space-y-2">
           <button
             onClick={handleExportExcel}
-            className="btn-secondary"
+            className="w-full btn-secondary flex items-center justify-center"
           >
             <Download className="h-4 w-4 mr-2" />
             Export Excel
@@ -103,7 +120,7 @@ const Users: React.FC = () => {
           {hasRole(['manager']) && (
             <button
               onClick={() => setShowForm(true)}
-              className="btn-primary"
+              className="w-full btn-primary flex items-center justify-center"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add User
@@ -113,119 +130,134 @@ const Users: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="card-body">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <div className="search-icon">
-                  <Search className="h-5 w-5" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search users..."
-                  className="search-input"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+      <div className="card-body p-4">
+        <div className="flex flex-col space-y-4">
+          {/* Search */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
-            <div className="sm:w-48">
-              <select
-                className="input"
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
+            <input
+              type="text"
+              placeholder="Search users..."
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Role Filter */}
+          <MobileDropdown
+            options={roleOptions}
+            value={roleFilter}
+            onChange={setRoleFilter}
+            placeholder="All Roles"
+            className="w-full"
+          />
+
+          {/* Debug Info and Clear Filters */}
+          <div className="flex flex-col space-y-2">
+            <div className="text-sm text-gray-600">
+              Showing {filteredUsers.length} of {users.length} users
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="w-full btn-secondary flex items-center justify-center"
               >
-                <option value="">All Roles</option>
-                {Object.entries(ROLES).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <X className="h-4 w-4 mr-2" />
+                Clear all filters
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Users Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredUsers.map((user) => (
-          <div key={user.id} className="card hover:shadow-md transition-shadow">
-            <div className="card-body">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center">
-                  <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <UserIcon className="h-6 w-6 text-primary-600" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {user.name}
-                    </h3>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                  </div>
-                </div>
-                <div className="flex space-x-1">
-                  <button
-                    onClick={() => handleView(user)}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                  {hasRole(['manager']) && (
-                    <>
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(user.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                </div>
+      {/* Users List */}
+      <div className="card-body p-4">
+        <div className="flex flex-col space-y-3">
+          {filteredUsers.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <UserIcon className="h-6 w-6 text-gray-400" />
               </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center text-sm text-gray-500">
-                  <Shield className="h-4 w-4 mr-2" />
-                  <span className={`status-badge ${getRoleColor(user.role)}`}>
-                    {ROLES[user.role as keyof typeof ROLES]}
-                  </span>
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <Mail className="h-4 w-4 mr-2" />
-                  <span>{user.email}</span>
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span>Joined recently</span>
-                </div>
-              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+              <p className="text-sm text-gray-500">
+                {searchTerm || roleFilter
+                  ? 'Try adjusting your search or filter criteria.'
+                  : 'Get started by adding your first user.'}
+              </p>
             </div>
-          </div>
-        ))}
-      </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredUsers.map((user) => (
+                <div key={user.id} className="card hover:shadow-md transition-shadow">
+                  <div className="card-body p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center flex-1 min-w-0">
+                        <div className="h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                          <UserIcon className="h-5 w-5 text-primary-600" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {user.name}
+                          </h3>
+                          <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-1 flex-shrink-0">
+                        <button
+                          onClick={() => handleView(user)}
+                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        {hasRole(['manager']) && (
+                          <>
+                            <button
+                              onClick={() => handleEdit(user)}
+                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user.id)}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
 
-      {/* Empty State */}
-      {filteredUsers.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-state-icon">
-            <UserIcon className="h-12 w-12" />
-          </div>
-          <h3 className="empty-state-title">No users found</h3>
-          <p className="empty-state-description">
-            {searchTerm || roleFilter
-              ? 'Try adjusting your search or filter criteria.'
-              : 'Get started by adding your first user.'}
-          </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700 mr-2">Role:</span>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
+                          {ROLES[user.role as keyof typeof ROLES]}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700 mr-2">Email:</span>
+                        <span className="text-xs text-gray-900 truncate flex-1 text-right">
+                          {user.email}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700 mr-2">Status:</span>
+                        <span className="text-xs text-gray-500">Active</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* User Form Modal */}
       {showForm && (

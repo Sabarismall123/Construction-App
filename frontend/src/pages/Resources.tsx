@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, searchItems, filterItems } from '@/utils';
 import { RESOURCE_TYPES, RESOURCE_STATUSES } from '@/constants';
+import MobileDropdown from '@/components/MobileDropdown';
 
 const Resources: React.FC = () => {
   const { resources, projects, deleteResource } = useData();
@@ -39,19 +40,19 @@ const Resources: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Resources</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Resources</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Manage labor, materials, and equipment resources
           </p>
         </div>
         {hasRole(['admin', 'manager', 'site_supervisor']) && (
           <button
             onClick={() => setShowForm(true)}
-            className="btn-primary mt-4 sm:mt-0"
+            className="w-full btn-primary flex items-center justify-center"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Resource
@@ -61,70 +62,68 @@ const Resources: React.FC = () => {
 
       {/* Filters */}
       <div className="card">
-        <div className="card-body">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <div className="relative">
-                <div className="search-icon">
-                  <Search className="h-5 w-5" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search resources..."
-                  className="search-input"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+        <div className="card-body p-4">
+          <div className="flex flex-col space-y-3">
+            <div className="relative">
+              <div className="search-icon">
+                <Search className="h-5 w-5" />
               </div>
+              <input
+                type="text"
+                placeholder="Search resources..."
+                className="search-input"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
             <div>
-              <select
-                className="input"
+              <MobileDropdown
+                options={[
+                  { value: '', label: 'All Types' },
+                  ...RESOURCE_TYPES.map(type => ({
+                    value: type.value,
+                    label: type.label
+                  }))
+                ]}
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-              >
-                <option value="">All Types</option>
-                {RESOURCE_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setTypeFilter}
+                placeholder="All Types"
+              />
             </div>
             <div>
-              <select
-                className="input"
+              <MobileDropdown
+                options={[
+                  { value: '', label: 'All Statuses' },
+                  ...RESOURCE_STATUSES.map(status => ({
+                    value: status.value,
+                    label: status.label
+                  }))
+                ]}
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                {RESOURCE_STATUSES.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setStatusFilter}
+                placeholder="All Statuses"
+              />
             </div>
           </div>
         </div>
       </div>
 
       {/* Resources Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4">
         {filteredResources.map((resource) => (
           <div key={resource.id} className="card hover:shadow-md transition-shadow">
-            <div className="card-body">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center">
-                  <div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
+            <div className="card-body p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center flex-1 min-w-0">
+                  <div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
                     <span className="text-lg">{getTypeIcon(resource.type)}</span>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">{resource.name}</h3>
-                    <p className="text-sm text-gray-500">{RESOURCE_TYPES.find(t => t.value === resource.type)?.label}</p>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">{resource.name}</h3>
+                    <p className="text-sm text-gray-500 truncate">{RESOURCE_TYPES.find(t => t.value === resource.type)?.label}</p>
                   </div>
                 </div>
-                <div className="flex space-x-1">
+                <div className="flex space-x-1 flex-shrink-0">
                   {hasRole(['admin', 'manager', 'site_supervisor']) && (
                     <>
                       <button
@@ -144,7 +143,7 @@ const Resources: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Status</span>
                   <span className={`status-badge ${getStatusColor(resource.status)}`}>
@@ -154,26 +153,26 @@ const Resources: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Quantity</span>
-                  <span className="text-sm font-medium">{resource.quantity} {resource.unit}</span>
+                  <span className="text-sm font-medium truncate">{resource.quantity} {resource.unit}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Allocated</span>
-                  <span className="text-sm font-medium">{resource.allocatedQuantity} {resource.unit}</span>
+                  <span className="text-sm font-medium truncate">{resource.allocatedQuantity} {resource.unit}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Cost</span>
-                  <span className="text-sm font-medium">{formatCurrency(resource.cost)}</span>
+                  <span className="text-sm font-medium truncate">{formatCurrency(resource.cost)}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Project</span>
-                  <span className="text-sm font-medium">{getProjectName(resource.projectId)}</span>
+                  <span className="text-sm font-medium truncate">{getProjectName(resource.projectId)}</span>
                 </div>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-3">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-gray-500">Allocation</span>
                   <span className="font-medium">

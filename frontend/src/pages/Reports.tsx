@@ -47,9 +47,9 @@ const Reports: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
           <p className="mt-1 text-sm text-gray-500">
@@ -59,61 +59,57 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Report Configuration */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="text-lg font-medium text-gray-900">Report Configuration</h3>
-        </div>
-        <div className="card-body">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="label">Module</label>
-              <select
-                className="input"
-                value={selectedModule}
-                onChange={(e) => setSelectedModule(e.target.value)}
-              >
-                {reportModules.map((module) => (
-                  <option key={module.key} value={module.key}>
-                    {module.icon} {module.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label">From Date</label>
-              <input
-                type="date"
-                className="input"
-                value={dateRange.from}
-                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="label">To Date</label>
-              <input
-                type="date"
-                className="input"
-                value={dateRange.to}
-                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="label">Format</label>
-              <select
-                className="input"
-                value={reportFormat}
-                onChange={(e) => setReportFormat(e.target.value)}
-              >
-                <option value="pdf">PDF</option>
-                <option value="excel">Excel</option>
-                <option value="csv">CSV</option>
-              </select>
-            </div>
+      <div className="card-body p-4">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Report Configuration</h3>
+        <div className="flex flex-col space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Module</label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              value={selectedModule}
+              onChange={(e) => setSelectedModule(e.target.value)}
+            >
+              {reportModules.map((module) => (
+                <option key={module.key} value={module.key}>
+                  {module.icon} {module.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              value={dateRange.from}
+              onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              value={dateRange.to}
+              onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              value={reportFormat}
+              onChange={(e) => setReportFormat(e.target.value)}
+            >
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
+              <option value="csv">CSV</option>
+            </select>
           </div>
           <div className="mt-4">
             <button
               onClick={handleGenerateReport}
-              className="btn-primary"
+              className="w-full btn-primary flex items-center justify-center"
             >
               <Download className="h-4 w-4 mr-2" />
               Generate Report
@@ -123,7 +119,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-4">
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
@@ -174,9 +170,9 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Report Templates */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="flex flex-col space-y-4">
         <div className="card hover:shadow-md transition-shadow cursor-pointer">
-          <div className="card-body">
+          <div className="card-body p-4">
             <div className="flex items-center mb-4">
               <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
                 <BarChart3 className="h-5 w-5 text-blue-600" />
@@ -186,7 +182,7 @@ const Reports: React.FC = () => {
             <p className="text-sm text-gray-500 mb-4">
               Comprehensive overview of all projects including progress, budget, and timeline.
             </p>
-            <button className="btn-secondary w-full">
+            <button className="w-full btn-secondary flex items-center justify-center">
               <Download className="h-4 w-4 mr-2" />
               Generate Report
             </button>
@@ -194,7 +190,7 @@ const Reports: React.FC = () => {
         </div>
 
         <div className="card hover:shadow-md transition-shadow cursor-pointer">
-          <div className="card-body">
+          <div className="card-body p-4">
             <div className="flex items-center mb-4">
               <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
                 <TrendingUp className="h-5 w-5 text-green-600" />
@@ -204,7 +200,7 @@ const Reports: React.FC = () => {
             <p className="text-sm text-gray-500 mb-4">
               Detailed financial analysis including expenses, budget utilization, and cost trends.
             </p>
-            <button className="btn-secondary w-full">
+            <button className="w-full btn-secondary flex items-center justify-center">
               <Download className="h-4 w-4 mr-2" />
               Generate Report
             </button>
@@ -212,7 +208,7 @@ const Reports: React.FC = () => {
         </div>
 
         <div className="card hover:shadow-md transition-shadow cursor-pointer">
-          <div className="card-body">
+          <div className="card-body p-4">
             <div className="flex items-center mb-4">
               <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
                 <FileText className="h-5 w-5 text-purple-600" />
@@ -222,7 +218,7 @@ const Reports: React.FC = () => {
             <p className="text-sm text-gray-500 mb-4">
               Employee attendance summary with working hours, overtime, and attendance rates.
             </p>
-            <button className="btn-secondary w-full">
+            <button className="w-full btn-secondary flex items-center justify-center">
               <Download className="h-4 w-4 mr-2" />
               Generate Report
             </button>
@@ -231,32 +227,28 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Recent Reports */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="text-lg font-medium text-gray-900">Recent Reports</h3>
-        </div>
-        <div className="card-body">
-          <div className="space-y-3">
-            {[
-              { name: 'Project Summary - Q1 2024', date: '2024-01-15', format: 'PDF', size: '2.3 MB' },
-              { name: 'Financial Report - March 2024', date: '2024-03-31', format: 'Excel', size: '1.8 MB' },
-              { name: 'Attendance Report - March 2024', date: '2024-03-31', format: 'PDF', size: '1.2 MB' }
-            ].map((report, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <FileText className="h-5 w-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{report.name}</p>
-                    <p className="text-xs text-gray-500">{report.date} • {report.format} • {report.size}</p>
-                  </div>
+      <div className="card-body p-4">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Reports</h3>
+        <div className="space-y-3">
+          {[
+            { name: 'Project Summary - Q1 2024', date: '2024-01-15', format: 'PDF', size: '2.3 MB' },
+            { name: 'Financial Report - March 2024', date: '2024-03-31', format: 'Excel', size: '1.8 MB' },
+            { name: 'Attendance Report - March 2024', date: '2024-03-31', format: 'PDF', size: '1.2 MB' }
+          ].map((report, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center flex-1 min-w-0">
+                <FileText className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 truncate">{report.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{report.date} • {report.format} • {report.size}</p>
                 </div>
-                <button className="btn-secondary btn-sm">
-                  <Download className="h-4 w-4 mr-1" />
-                  Download
-                </button>
               </div>
-            ))}
-          </div>
+              <button className="btn-secondary btn-sm flex-shrink-0 ml-2">
+                <Download className="h-4 w-4 mr-1" />
+                Download
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </div>
