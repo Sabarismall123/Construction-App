@@ -36,8 +36,12 @@ app.use(cors({
   origin: [
     'http://localhost:5173', 
     'http://localhost:5174',
-    'https://construction-app.vercel.app',  // Add your Vercel URL here
-    'https://*.vercel.app'  // Or allow all Vercel subdomains
+    'https://construction-app-o7qj-o3h1wiua9-sabaris-projects-383b3041.vercel.app',
+    'https://construction-app.vercel.app',
+    'https://*.vercel.app',  // Allow all Vercel subdomains
+    'capacitor://localhost',  // Allow Capacitor mobile app
+    'ionic://localhost',  // Allow Ionic mobile app
+    'http://localhost'  // Allow localhost for mobile development
   ],
   credentials: true
 }));
