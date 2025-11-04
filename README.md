@@ -1,216 +1,185 @@
 # Construction Management System
 
-A comprehensive construction management system built with React, TypeScript, and Tailwind CSS. The system provides both web and mobile interfaces for managing construction projects, tasks, issues, resources, attendance, petty cash, and commercial operations.
+A comprehensive construction management system with both frontend and backend components, built for managing projects, tasks, issues, resources, attendance, and commercial operations.
 
-## Features
+## 📁 Project Structure
 
-### 🏗️ Core Modules
+```
+construction-management/
+├── frontend/                 # React + TypeScript frontend
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── pages/          # Page components
+│   │   ├── contexts/       # React contexts (Auth, Data, Theme)
+│   │   ├── layouts/        # Layout components
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── types/          # TypeScript type definitions
+│   │   ├── utils/          # Utility functions
+│   │   └── constants/      # Application constants
+│   ├── package.json
+│   └── README.md
+├── backend/                 # Node.js + Express + MongoDB backend
+│   ├── src/
+│   │   ├── controllers/    # Route controllers
+│   │   ├── models/         # MongoDB models
+│   │   ├── routes/         # API routes
+│   │   ├── middleware/     # Custom middleware
+│   │   └── server.ts       # Main server file
+│   ├── package.json
+│   └── README.md
+└── README.md               # This file
+```
 
-- **Dashboard**: Overview with charts, statistics, and recent activity
-- **Projects**: Complete project lifecycle management with progress tracking
-- **Tasks**: Task assignment, tracking, and collaboration with comments
-- **Issues**: Issue tracking with resolution workflow and priority management
-- **Resources**: Management of labor, materials, and equipment resources
-- **Attendance**: Employee attendance tracking with bulk upload capabilities
-- **Petty Cash**: Expense tracking and financial management
-- **Commercial**: Inventory, site transfers, material issues/returns, and consumptions
-- **Reports**: Comprehensive reporting with export functionality
-
-### 🔐 Authentication & Authorization
-
-- Role-based access control (Admin, Manager, Site Supervisor, Employee)
-- Module-level permissions
-- Secure authentication system
-- User profile management
-
-### 📱 Responsive Design
-
-- **Web App**: Desktop-optimized with sidebar navigation
-- **Mobile App**: Mobile-first design with bottom tab navigation
-- Responsive layouts that work on all screen sizes
-- Touch-friendly interface for mobile devices
-
-### 🎨 UI/UX Features
-
-- Professional construction theme with blue/grey accents
-- Intuitive navigation with collapsible submenus
-- Color-coded status and priority indicators
-- Interactive charts and data visualizations
-- Real-time notifications
-- Search and filtering across all modules
-
-### 📊 Data Management
-
-- Local storage persistence
-- Dummy data for demonstration
-- CRUD operations for all entities
-- Data validation and error handling
-- Export capabilities (PDF/Excel/CSV)
-
-## Technology Stack
-
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: Tailwind CSS
-- **Charts**: Recharts
-- **Icons**: Lucide React
-- **Forms**: React Hook Form
-- **Notifications**: React Hot Toast
-- **Routing**: React Router DOM
-- **Date Handling**: date-fns
-- **Export**: jsPDF, xlsx
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-
 - Node.js (v16 or higher)
+- MongoDB (v4.4 or higher)
 - npm or yarn
 
-### Installation
+### 1. Frontend Setup
 
-1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd construction-management-system
-```
+# Navigate to frontend directory
+cd frontend
 
-2. Install dependencies:
-```bash
+# Install dependencies
 npm install
-```
 
-3. Start the development server:
-```bash
+# Start development server
 npm run dev
 ```
 
-4. Open your browser and navigate to `http://localhost:3000`
+The frontend will be available at `http://localhost:3000`
 
-### Demo Accounts
+### 2. Backend Setup
 
-The system includes demo accounts for testing different user roles:
+```bash
+# Navigate to backend directory
+cd backend
 
-- **Admin**: `admin@construction.com` / `password`
-- **Manager**: `manager@construction.com` / `password`
-- **Site Supervisor**: `supervisor@construction.com` / `password`
-- **Employee**: `employee@construction.com` / `password`
+# Install dependencies
+npm install
 
-## Project Structure
+# Copy environment file
+cp env.example .env
 
-```
-src/
-├── components/          # Reusable UI components
-├── contexts/           # React contexts for state management
-├── hooks/              # Custom React hooks
-├── layouts/            # Layout components for web and mobile
-├── pages/              # Page components for each module
-├── types/              # TypeScript type definitions
-├── utils/              # Utility functions
-├── constants/          # Application constants
-└── main.tsx           # Application entry point
+# Update .env with your MongoDB connection
+# MONGODB_URI=mongodb://localhost:27017/construction_management
+
+# Start development server
+npm run dev
 ```
 
-## Key Features
+The backend API will be available at `http://localhost:5000`
 
-### Dashboard
-- Project progress overview
-- Task and issue summaries
-- Financial metrics
-- Attendance statistics
-- Interactive charts and graphs
+## 🎯 Features
 
-### Project Management
-- Create, edit, and delete projects
-- Track project progress and budget
-- Assign projects to teams
-- Project status management
+### Frontend Features
+- **Modern UI**: Built with React, TypeScript, and Tailwind CSS
+- **Dark/Light Mode**: Theme switching with persistent preferences
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Role-based Access**: Different views based on user roles
+- **Real-time Updates**: Live data updates and notifications
+- **Export Functionality**: Export data to Excel/CSV
+- **Search & Filter**: Advanced search and filtering capabilities
 
-### Task Management
-- Task creation and assignment
-- Priority and status tracking
-- Due date management
-- Comment system for collaboration
-- Task filtering and search
+### Backend Features
+- **RESTful API**: Clean and well-documented API endpoints
+- **Authentication**: JWT-based authentication system
+- **Authorization**: Role-based access control
+- **Database**: MongoDB with Mongoose ODM
+- **Validation**: Request validation and sanitization
+- **Security**: Helmet, CORS, rate limiting
+- **Error Handling**: Comprehensive error handling
 
-### Issue Tracking
-- Issue reporting and assignment
-- Priority and status management
-- Resolution workflow
-- Comment system
-- Issue filtering and search
+### Core Modules
+1. **Dashboard**: Overview of projects, tasks, and key metrics
+2. **Projects**: Project management and tracking
+3. **Tasks**: Task assignment and progress tracking
+4. **Issues**: Issue reporting and resolution
+5. **Resources**: Equipment and material management
+6. **Attendance**: Employee time tracking
+7. **Petty Cash**: Expense management
+8. **Commercial**: Inventory and material operations
+9. **Users**: User and role management
+10. **Settings**: Application preferences
+11. **Reports**: Analytics and reporting
 
-### Resource Management
-- Labor, material, and equipment tracking
-- Resource allocation to projects
-- Inventory management
-- Cost tracking
+## 👥 User Roles
 
-### Attendance System
-- Employee attendance recording
-- Time tracking
-- Overtime calculation
-- Bulk upload capabilities
-- Monthly reports
+- **Admin**: Full system access and user management
+- **Manager**: Project and team management
+- **Site Supervisor**: Task and issue management
+- **Employee**: Basic access to assigned tasks
 
-### Financial Management
-- Petty cash tracking
-- Expense categorization
-- Budget monitoring
-- Financial reporting
+## 🛠️ Technology Stack
 
-### Commercial Operations
-- Inventory management
-- Site transfers
-- Material issues and returns
-- Consumption tracking
-- Stock level monitoring
+### Frontend
+- **React 18**: UI library
+- **TypeScript**: Type safety
+- **Vite**: Build tool and dev server
+- **Tailwind CSS**: Utility-first CSS framework
+- **React Router**: Client-side routing
+- **React Context**: State management
+- **Lucide React**: Icon library
 
-### Reporting
-- Comprehensive reports for all modules
-- Export to PDF, Excel, and CSV
-- Custom date ranges
-- Module-specific reports
+### Backend
+- **Node.js**: Runtime environment
+- **Express.js**: Web framework
+- **TypeScript**: Type safety
+- **MongoDB**: NoSQL database
+- **Mongoose**: MongoDB ODM
+- **JWT**: Authentication
+- **Express Validator**: Input validation
+- **Helmet**: Security middleware
 
-## Mobile App Features
+## 📊 Database Schema
 
-- Bottom tab navigation
-- Touch-optimized interface
-- Swipe gestures
-- Mobile-specific layouts
-- Offline capability (with local storage)
+### Core Models
+- **User**: User accounts and authentication
+- **Project**: Construction projects
+- **Task**: Project tasks and assignments
+- **Issue**: Issues and problems
+- **Resource**: Equipment and materials
+- **Attendance**: Employee time tracking
+- **PettyCash**: Expense management
 
-## Responsive Design
+## 🔐 Security
 
-The application is fully responsive and adapts to different screen sizes:
+- **JWT Authentication**: Secure token-based authentication
+- **Password Hashing**: bcrypt for password security
+- **Input Validation**: Server-side validation
+- **CORS Protection**: Cross-origin request security
+- **Rate Limiting**: API abuse prevention
+- **Helmet**: Security headers
 
-- **Desktop**: Full sidebar navigation with detailed views
-- **Tablet**: Collapsible sidebar with optimized layouts
-- **Mobile**: Bottom tab navigation with mobile-first design
+## 🚀 Deployment
 
-## Data Persistence
+### Frontend Deployment
+```bash
+cd frontend
+npm run build
+# Deploy dist/ folder to your hosting service
+```
 
-The application uses browser local storage to persist data between sessions. In a production environment, this would be replaced with a backend API and database.
+### Backend Deployment
+```bash
+cd backend
+npm run build
+npm start
+# Deploy to your server or cloud platform
+```
 
-## Customization
+## 📱 Mobile Support
 
-The system is highly customizable:
+The frontend is fully responsive and works on:
+- Desktop computers
+- Tablets
+- Mobile phones
+- Progressive Web App (PWA) ready
 
-- Theme colors can be modified in `tailwind.config.js`
-- User roles and permissions can be updated in `src/constants/index.ts`
-- Module configurations can be adjusted in the constants file
-- UI components can be easily modified using Tailwind CSS classes
-
-## Future Enhancements
-
-- Backend API integration
-- Real-time notifications
-- File upload capabilities
-- Advanced reporting features
-- Mobile app deployment
-- Multi-language support
-- Advanced analytics and insights
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -218,14 +187,30 @@ The system is highly customizable:
 4. Test thoroughly
 5. Submit a pull request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License.
 
-## Support
+## 📞 Support
 
-For support and questions, please contact the development team or create an issue in the repository.
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation in each module
 
----
+## 🔄 Development Workflow
 
-Built with ❤️ for the construction industry
+1. **Frontend Development**: Work in the `frontend/` directory
+2. **Backend Development**: Work in the `backend/` directory
+3. **API Integration**: Connect frontend to backend APIs
+4. **Testing**: Test both frontend and backend
+5. **Deployment**: Deploy both components
+
+## 📈 Future Enhancements
+
+- Real-time notifications
+- Advanced reporting
+- Mobile app development
+- Third-party integrations
+- Advanced analytics
+- Workflow automation
