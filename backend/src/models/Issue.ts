@@ -18,7 +18,7 @@ export interface IIssue extends Document {
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   category: 'safety' | 'quality' | 'schedule' | 'cost' | 'other';
   location?: string;
-  attachments: string[];
+  attachments: mongoose.Types.ObjectId[];
   comments: IComment[];
   resolvedAt?: Date;
   createdAt: Date;
@@ -100,8 +100,8 @@ const IssueSchema = new Schema<IIssue>({
     maxlength: [200, 'Location cannot be more than 200 characters']
   },
   attachments: [{
-    type: String,
-    trim: true
+    type: Schema.Types.ObjectId,
+    ref: 'FileAttachment'
   }],
   comments: [CommentSchema],
   resolvedAt: {

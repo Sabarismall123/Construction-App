@@ -12,7 +12,7 @@ export interface ITask extends Document {
   estimatedHours: number;
   actualHours?: number;
   tags: string[];
-  attachments: string[];
+  attachments: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,8 +75,8 @@ const TaskSchema = new Schema<ITask>({
     maxlength: [50, 'Tag cannot be more than 50 characters']
   }],
   attachments: [{
-    type: String,
-    trim: true
+    type: Schema.Types.ObjectId,
+    ref: 'FileAttachment'
   }]
 }, {
   timestamps: true

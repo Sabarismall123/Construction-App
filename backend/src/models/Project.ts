@@ -5,6 +5,12 @@ export interface IProject extends Document {
   description: string;
   client: string;
   location: string;
+  gpsLocation?: {
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+    address?: string;
+  };
   startDate: Date;
   endDate: Date;
   budget: number;
@@ -12,6 +18,18 @@ export interface IProject extends Document {
   progress: number;
   projectManager: mongoose.Types.ObjectId;
   team: mongoose.Types.ObjectId[];
+  siteVisits?: {
+    visitType: 'site_visit' | 'inspection' | 'delivery' | 'maintenance';
+    location: {
+      latitude: number;
+      longitude: number;
+      accuracy: number;
+      address?: string;
+    };
+    timestamp: Date;
+    notes?: string;
+    photos?: string[];
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,6 +100,28 @@ const ProjectSchema = new Schema<IProject>({
   team: [{
     type: Schema.Types.ObjectId,
     ref: 'User'
+  }],
+  gpsLocation: {
+    latitude: { type: Number },
+    longitude: { type: Number },
+    accuracy: { type: Number },
+    address: { type: String }
+  },
+  siteVisits: [{
+    visitType: {
+      type: String,
+      enum: ['site_visit', 'inspection', 'delivery', 'maintenance'],
+      required: true
+    },
+    location: {
+      latitude: { type: Number, required: true },
+      longitude: { type: Number, required: true },
+      accuracy: { type: Number, required: true },
+      address: { type: String }
+    },
+    timestamp: { type: Date, default: Date.now },
+    notes: { type: String },
+    photos: [{ type: String }]
   }]
 }, {
   timestamps: true

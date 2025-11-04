@@ -32,6 +32,7 @@ export const getTasks = async (req: AuthRequest, res: Response, next: NextFuncti
     const tasks = await Task.find(query)
       .populate('projectId', 'name')
       .populate('assignedTo', 'name email')
+      .populate('attachments', 'originalName mimetype size')
       .sort({ createdAt: -1 })
       .limit(Number(limit) * 1)
       .skip((Number(page) - 1) * Number(limit));
@@ -68,7 +69,8 @@ export const getTask = async (req: Request, res: Response, next: NextFunction): 
 
     const task = await Task.findById(req.params.id)
       .populate('projectId', 'name')
-      .populate('assignedTo', 'name email');
+      .populate('assignedTo', 'name email')
+      .populate('attachments', 'originalName mimetype size');
 
     if (!task) {
       res.status(404).json({
@@ -222,6 +224,7 @@ export const getTasksByProject = async (req: Request, res: Response, next: NextF
 
     const tasks = await Task.find({ projectId: req.params.projectId })
       .populate('assignedTo', 'name email')
+      .populate('attachments', 'originalName mimetype size')
       .sort({ createdAt: -1 });
 
     res.json({

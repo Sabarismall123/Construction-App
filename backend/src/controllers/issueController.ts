@@ -44,6 +44,7 @@ export const getIssues = async (req: AuthRequest, res: Response, next: NextFunct
       .populate('projectId', 'name')
       .populate('reportedBy', 'name email')
       .populate('assignedTo', 'name email')
+      .populate('attachments', 'originalName mimetype size')
       .sort({ createdAt: -1 })
       .limit(Number(limit) * 1)
       .skip((Number(page) - 1) * Number(limit));
@@ -81,7 +82,8 @@ export const getIssue = async (req: Request, res: Response, next: NextFunction):
     const issue = await Issue.findById(req.params.id)
       .populate('projectId', 'name')
       .populate('reportedBy', 'name email')
-      .populate('assignedTo', 'name email');
+      .populate('assignedTo', 'name email')
+      .populate('attachments', 'originalName mimetype size');
 
     if (!issue) {
       res.status(404).json({
@@ -240,6 +242,7 @@ export const getIssuesByProject = async (req: Request, res: Response, next: Next
     const issues = await Issue.find({ projectId: req.params.projectId })
       .populate('reportedBy', 'name email')
       .populate('assignedTo', 'name email')
+      .populate('attachments', 'originalName mimetype size')
       .sort({ createdAt: -1 });
 
     res.json({
