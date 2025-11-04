@@ -101,17 +101,17 @@ const Tasks: React.FC = () => {
   return (
     <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col space-y-4">
-        <div>
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="min-w-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Tasks</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Manage and track project tasks and assignments
           </p>
         </div>
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
           <button
             onClick={handleExportExcel}
-            className="w-full btn-secondary flex items-center justify-center"
+            className="w-full lg:w-auto btn-secondary flex items-center justify-center"
           >
             <Download className="h-4 w-4 mr-2" />
             Export Excel
@@ -119,7 +119,7 @@ const Tasks: React.FC = () => {
           {hasRole(['admin', 'manager', 'site_supervisor']) && (
             <button
               onClick={() => setShowForm(true)}
-              className="w-full btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Task

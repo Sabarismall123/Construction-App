@@ -29,9 +29,13 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose }) => {
   return (
     <div
       className={cn(
-        'fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col',
+        'fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
+      style={{
+        maxWidth: '85vw',
+        width: '320px'
+      }}
     >
       {/* Header with X close button */}
        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">

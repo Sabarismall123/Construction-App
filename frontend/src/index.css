@@ -37,6 +37,47 @@
   }
 }
 
+/* Desktop/Web-only fixes: keep mobile untouched */
+@media (min-width: 1024px) {
+  /* Remove mobile height constraints on desktop to avoid cramped layouts */
+  html, body, #root {
+    height: auto !important;
+    min-height: 100% !important;
+    max-height: none !important;
+  }
+
+  /* Allow normal document flow and scrolling on desktop */
+  main {
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
+  /* Action buttons should not be full width on desktop */
+  .btn,
+  button.btn,
+  a.btn {
+    width: auto !important;
+    display: inline-flex !important;
+  }
+
+  /* Common desktop paddings for content cards */
+  .card-body {
+    padding: 1.25rem 1.5rem !important; /* 20px 24px */
+  }
+
+  /* Inputs/selects default to content width on desktop */
+  input.w-full,
+  select.w-full,
+  textarea.w-full {
+    width: auto !important;
+  }
+
+  /* Prevent mobile spacing utilities from stacking excessively on desktop */
+  .space-y-4 > * + * { margin-top: 0 !important; }
+  .space-y-3 > * + * { margin-top: 0 !important; }
+  .space-y-2 > * + * { margin-top: 0 !important; }
+}
+
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
@@ -641,5 +682,259 @@
       min-height: calc(100dvh - 80px) !important;
       min-height: calc(100svh - 80px) !important;
     }
+  }
+
+  /* Alignment fixes for mobile devices */
+  /* Header alignment */
+  header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Ensure header content is properly aligned */
+  header > div {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Fix text alignment in header */
+  header span,
+  header h1,
+  header h2,
+  header h3 {
+    text-align: left !important;
+    vertical-align: middle !important;
+  }
+
+  /* Content alignment */
+  .mobile-content {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Fix flex items alignment */
+  .flex {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .flex-col {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .flex.items-center {
+    align-items: center !important;
+  }
+
+  .flex.items-start {
+    align-items: flex-start !important;
+  }
+
+  .flex.items-end {
+    align-items: flex-end !important;
+  }
+
+  .flex.justify-between {
+    justify-content: space-between !important;
+  }
+
+  .flex.justify-center {
+    justify-content: center !important;
+  }
+
+  .flex.justify-start {
+    justify-content: flex-start !important;
+  }
+
+  /* Button alignment */
+  button,
+  .btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Card alignment */
+  .card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .card-body {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  /* Grid alignment */
+  .grid {
+    display: grid !important;
+    align-items: start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Text alignment */
+  .text-left {
+    text-align: left !important;
+  }
+
+  .text-center {
+    text-align: center !important;
+  }
+
+  .text-right {
+    text-align: right !important;
+  }
+
+  /* Fix for flex items with text overflow */
+  .flex > * {
+    min-width: 0 !important;
+  }
+
+  /* Ensure proper vertical alignment */
+  .items-center {
+    align-items: center !important;
+  }
+
+  .items-start {
+    align-items: flex-start !important;
+  }
+
+  .items-end {
+    align-items: flex-end !important;
+  }
+
+  /* Fix for space between elements */
+  .space-x-2 > * + * {
+    margin-left: 0.5rem !important;
+  }
+
+  .space-x-3 > * + * {
+    margin-left: 0.75rem !important;
+  }
+
+  .space-x-4 > * + * {
+    margin-left: 1rem !important;
+  }
+
+  /* Fix for icon and text alignment */
+  button svg,
+  .btn svg {
+    flex-shrink: 0 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Header logo and title alignment */
+  header .flex.items-center {
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Ensure all container elements respect alignment */
+  div {
+    box-sizing: border-box !important;
+  }
+
+  /* Fix for bottom navigation alignment */
+  .fixed.bottom-0 {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  /* Fix for sidebar alignment */
+  .fixed.left-0 {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Sidebar overlay fixes */
+  .fixed.inset-0 {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: 100svh !important;
+    z-index: 40 !important;
+  }
+
+  /* Ensure sidebar doesn't push content */
+  .mobile-layout {
+    position: relative !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Prevent body scroll when sidebar is open */
+  body.sidebar-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+  }
+
+  /* Sidebar specific width constraints */
+  .fixed.left-0.h-full {
+    max-width: 85vw !important;
+    width: 320px !important;
+  }
+
+  @media (max-width: 375px) {
+    .fixed.left-0.h-full {
+      max-width: 90vw !important;
+      width: 280px !important;
+    }
+  }
+
+  /* Ensure main content doesn't shift */
+  main {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+  }
+
+  /* Prevent horizontal scroll */
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    position: relative !important;
+  }
+
+  /* Ensure content containers respect width */
+  .mobile-content,
+  .mobile-content > * {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 }

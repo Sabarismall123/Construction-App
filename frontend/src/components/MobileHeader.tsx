@@ -24,12 +24,13 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="flex items-center justify-between h-14 px-4 min-w-0">
-        <div className="flex items-center flex-1 min-w-0">
+      <div className="flex items-center justify-between h-14 px-4 min-w-0 w-full">
+        <div className="flex items-center flex-1 min-w-0 gap-2">
           {/* Hamburger Menu */}
           <button
             onClick={onMenuClick}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 mr-2 flex-shrink-0"
+            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 flex-shrink-0"
+            aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -40,7 +41,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
           </div>
           
           {/* App Title */}
-          <span className="ml-2 text-lg font-semibold text-gray-900 truncate">
+          <span className="text-lg font-semibold text-gray-900 truncate min-w-0">
             Construction
           </span>
         </div>

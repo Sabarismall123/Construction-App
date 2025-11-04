@@ -135,9 +135,112 @@ class ApiService {
     });
   }
 
+  // Resource endpoints
+  async getResources() {
+    return this.request('/resources');
+  }
+
+  async getResource(id: string) {
+    return this.request(`/resources/${id}`);
+  }
+
+  async createResource(resource: any) {
+    return this.request('/resources', {
+      method: 'POST',
+      body: JSON.stringify(resource),
+    });
+  }
+
+  async updateResource(id: string, resource: any) {
+    return this.request(`/resources/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(resource),
+    });
+  }
+
+  async deleteResource(id: string) {
+    return this.request(`/resources/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getResourcesByProject(projectId: string) {
+    return this.request(`/resources/project/${projectId}`);
+  }
+
+  // Petty Cash endpoints
+  async getPettyCashEntries() {
+    return this.request('/petty-cash');
+  }
+
+  async getPettyCashEntry(id: string) {
+    return this.request(`/petty-cash/${id}`);
+  }
+
+  async createPettyCashEntry(entry: any) {
+    return this.request('/petty-cash', {
+      method: 'POST',
+      body: JSON.stringify(entry),
+    });
+  }
+
+  async updatePettyCashEntry(id: string, entry: any) {
+    return this.request(`/petty-cash/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(entry),
+    });
+  }
+
+  async deletePettyCashEntry(id: string) {
+    return this.request(`/petty-cash/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getPettyCashEntriesByProject(projectId: string) {
+    return this.request(`/petty-cash/project/${projectId}`);
+  }
+
+  // Commercial endpoints
+  async getCommercialEntries() {
+    return this.request('/commercial');
+  }
+
+  async getCommercialEntry(id: string) {
+    return this.request(`/commercial/${id}`);
+  }
+
+  async createCommercialEntry(entry: any) {
+    return this.request('/commercial', {
+      method: 'POST',
+      body: JSON.stringify(entry),
+    });
+  }
+
+  async updateCommercialEntry(id: string, entry: any) {
+    return this.request(`/commercial/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(entry),
+    });
+  }
+
+  async deleteCommercialEntry(id: string) {
+    return this.request(`/commercial/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getCommercialEntriesByProject(projectId: string) {
+    return this.request(`/commercial/project/${projectId}`);
+  }
+
   // User endpoints
   async getUsers() {
     return this.request('/users');
+  }
+
+  async getUser(id: string) {
+    return this.request(`/users/${id}`);
   }
 
   async createUser(user: any) {

@@ -205,25 +205,37 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const loadData = async () => {
       try {
         console.log('🔄 Loading data from API...');
-        // Try to load projects, tasks, issues, and attendance from API first
-        const [projectsResponse, tasksResponse, issuesResponse, attendanceResponse] = await Promise.all([
+        // Try to load projects, tasks, issues, attendance, and resources from API first
+        const [projectsResponse, tasksResponse, issuesResponse, attendanceResponse, resourcesResponse, pettyCashResponse, commercialResponse, usersResponse] = await Promise.all([
           apiService.getProjects(),
           apiService.getTasks(),
           apiService.getIssues(),
-          apiService.getAttendance()
+          apiService.getAttendance(),
+          apiService.getResources(),
+          apiService.getPettyCashEntries(),
+          apiService.getCommercialEntries(),
+          apiService.getUsers()
         ]);
         
         console.log('📊 API Responses:', {
           projects: projectsResponse,
           tasks: tasksResponse,
           issues: issuesResponse,
-          attendance: attendanceResponse
+          attendance: attendanceResponse,
+          resources: resourcesResponse,
+          pettyCash: pettyCashResponse,
+          commercial: commercialResponse,
+          users: usersResponse
         });
         
         const projects = (projectsResponse as any).data || projectsResponse;
         const tasks = (tasksResponse as any).data || tasksResponse;
         const issues = (issuesResponse as any).data || issuesResponse;
         const attendance = (attendanceResponse as any).data || attendanceResponse;
+        const resources = (resourcesResponse as any).data || resourcesResponse;
+        const pettyCash = (pettyCashResponse as any).data || pettyCashResponse;
+        const commercial = (commercialResponse as any).data || commercialResponse;
+        const users = (usersResponse as any).data || usersResponse;
         
         setData(prev => ({
           ...prev,
@@ -261,6 +273,39 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             employeeId: a.employeeId?._id || a.employeeId || a.employeeId,
             createdAt: new Date(a.createdAt || Date.now()),
             updatedAt: new Date(a.updatedAt || Date.now())
+          })),
+          resources: resources.map((r: any) => ({
+            ...r,
+            id: r._id || r.id,
+            name: r.name,
+            type: r.type === 'other' ? 'labor' : r.type, // Map 'other' to 'labor' for frontend
+            quantity: r.quantity || 0,
+            allocatedQuantity: r.allocatedQuantity || 0, // Calculate allocated from status
+            status: r.status === 'out_of_order' ? 'maintenance' : r.status, // Map status
+            projectId: r.projectId?._id || r.projectId || r.projectId,
+            unit: r.unit || 'unit',
+            cost: r.costPerUnit || r.cost || 0,
+            createdAt: new Date(r.createdAt || Date.now()),
+            updatedAt: new Date(r.updatedAt || Date.now())
+          })),
+          pettyCash: pettyCash.map((pc: any) => ({
+            ...pc,
+            id: pc._id || pc.id,
+            date: pc.requestDate ? formatDate(new Date(pc.requestDate)) : formatDate(new Date(pc.date || Date.now())),
+            amount: pc.amount || 0,
+            projectId: pc.projectId?._id || pc.projectId || pc.projectId,
+            paidTo: pc.requestedBy?.name || pc.paidTo || '',
+            category: pc.category || 'other',
+            description: pc.description || '',
+            attachment: pc.receiptImage || pc.attachment || '',
+            createdAt: formatDate(new Date(pc.createdAt || Date.now())),
+            updatedAt: formatDate(new Date(pc.updatedAt || Date.now()))
+          })),
+          users: users.map((u: any) => ({
+            ...u,
+            id: u._id || u.id,
+            createdAt: formatDate(new Date(u.createdAt || Date.now())),
+            updatedAt: formatDate(new Date(u.updatedAt || Date.now()))
           }))
         }));
       } catch (error) {
@@ -494,57 +539,215 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Resource actions
-  const addResource = (resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newResource: Resource = {
-      ...resource,
-      id: generateId(),
-      createdAt: formatDate(new Date()),
-      updatedAt: formatDate(new Date())
-    };
-    setData(prev => ({ ...prev, resources: [...prev.resources, newResource] }));
+  const addResource = async (resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      // Map frontend fields to backend format
+      const resourceData = {
+        name: resource.name,
+        type: resource.type === 'labor' ? 'other' : resource.type,
+        category: resource.type || 'general',
+        description: '',
+        quantity: resource.quantity || 0,
+        unit: resource.unit || 'unit',
+        costPerUnit: resource.cost || 0,
+        supplier: '',
+        location: '',
+        status: resource.status || 'available',
+        projectId: resource.projectId || undefined,
+        purchaseDate: new Date(),
+        notes: ''
+      };
+
+      const response = await apiService.createResource(resourceData);
+      const newResource: Resource = {
+        ...(response as any).data,
+        id: (response as any).data._id || (response as any).data.id,
+        type: (response as any).data.type === 'other' ? 'labor' : (response as any).data.type,
+        allocatedQuantity: (response as any).data.allocatedQuantity || 0,
+        status: (response as any).data.status === 'out_of_order' ? 'maintenance' : (response as any).data.status,
+        cost: (response as any).data.costPerUnit || (response as any).data.cost || 0,
+        projectId: (response as any).data.projectId?._id || (response as any).data.projectId || (response as any).data.projectId,
+        createdAt: formatDate(new Date()),
+        updatedAt: formatDate(new Date())
+      };
+      setData(prev => ({ ...prev, resources: [...prev.resources, newResource] }));
+    } catch (error) {
+      console.error('Failed to create resource:', error);
+      // Fallback to localStorage if API fails
+      const newResource: Resource = {
+        ...resource,
+        id: generateId(),
+        createdAt: formatDate(new Date()),
+        updatedAt: formatDate(new Date())
+      };
+      setData(prev => ({ ...prev, resources: [...prev.resources, newResource] }));
+    }
   };
 
-  const updateResource = (id: string, resource: Partial<Resource>) => {
-    setData(prev => ({
-      ...prev,
-      resources: prev.resources.map(r => 
-        r.id === id ? { ...r, ...resource, updatedAt: formatDate(new Date()) } : r
-      )
-    }));
+  const updateResource = async (id: string, resource: Partial<Resource>) => {
+    try {
+      // Map frontend fields to backend format
+      const updateData: any = {};
+      if (resource.name !== undefined) updateData.name = resource.name;
+      if (resource.type !== undefined) {
+        updateData.type = resource.type === 'labor' ? 'other' : resource.type;
+      }
+      if (resource.quantity !== undefined) updateData.quantity = resource.quantity;
+      if (resource.unit !== undefined) updateData.unit = resource.unit;
+      if (resource.cost !== undefined) updateData.costPerUnit = resource.cost;
+      if (resource.status !== undefined) {
+        updateData.status = resource.status === 'retired' ? 'out_of_order' : resource.status;
+      }
+      if (resource.projectId !== undefined) updateData.projectId = resource.projectId;
+
+      const response = await apiService.updateResource(id, updateData);
+      setData(prev => ({
+        ...prev,
+        resources: prev.resources.map(r => {
+          if (r.id === id) {
+            const updated = (response as any).data;
+            return {
+              ...r,
+              ...updated,
+              id: updated._id || updated.id || r.id,
+              type: updated.type === 'other' ? 'labor' : updated.type,
+              allocatedQuantity: updated.allocatedQuantity || r.allocatedQuantity || 0,
+              status: updated.status === 'out_of_order' ? 'maintenance' : updated.status,
+              cost: updated.costPerUnit || updated.cost || r.cost,
+              projectId: updated.projectId?._id || updated.projectId || updated.projectId,
+              updatedAt: formatDate(new Date())
+            };
+          }
+          return r;
+        })
+      }));
+    } catch (error) {
+      console.error('Failed to update resource:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        resources: prev.resources.map(r => 
+          r.id === id ? { ...r, ...resource, updatedAt: formatDate(new Date()) } : r
+        )
+      }));
+    }
   };
 
-  const deleteResource = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      resources: prev.resources.filter(r => r.id !== id)
-    }));
+  const deleteResource = async (id: string) => {
+    try {
+      await apiService.deleteResource(id);
+      setData(prev => ({
+        ...prev,
+        resources: prev.resources.filter(r => r.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete resource:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        resources: prev.resources.filter(r => r.id !== id)
+      }));
+    }
   };
 
   // Petty Cash actions
-  const addPettyCash = (pettyCash: Omit<PettyCash, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newPettyCash: PettyCash = {
-      ...pettyCash,
-      id: generateId(),
-      createdAt: formatDate(new Date()),
-      updatedAt: formatDate(new Date())
-    };
-    setData(prev => ({ ...prev, pettyCash: [...prev.pettyCash, newPettyCash] }));
+  const addPettyCash = async (pettyCash: Omit<PettyCash, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      // Map frontend fields to backend format
+      const pettyCashData = {
+        projectId: pettyCash.projectId,
+        amount: pettyCash.amount,
+        description: pettyCash.description || '',
+        category: pettyCash.category || 'other',
+        date: pettyCash.date,
+        paidTo: pettyCash.paidTo || '',
+        attachment: pettyCash.attachment || ''
+      };
+
+      const response = await apiService.createPettyCashEntry(pettyCashData);
+      const newPettyCash: PettyCash = {
+        ...(response as any).data,
+        id: (response as any).data._id || (response as any).data.id,
+        date: (response as any).data.requestDate ? formatDate(new Date((response as any).data.requestDate)) : formatDate(new Date((response as any).data.date || Date.now())),
+        projectId: (response as any).data.projectId?._id || (response as any).data.projectId || (response as any).data.projectId,
+        paidTo: (response as any).data.requestedBy?.name || (response as any).data.paidTo || '',
+        attachment: (response as any).data.receiptImage || (response as any).data.attachment || '',
+        createdAt: formatDate(new Date()),
+        updatedAt: formatDate(new Date())
+      };
+      setData(prev => ({ ...prev, pettyCash: [...prev.pettyCash, newPettyCash] }));
+    } catch (error) {
+      console.error('Failed to create petty cash entry:', error);
+      // Fallback to localStorage if API fails
+      const newPettyCash: PettyCash = {
+        ...pettyCash,
+        id: generateId(),
+        createdAt: formatDate(new Date()),
+        updatedAt: formatDate(new Date())
+      };
+      setData(prev => ({ ...prev, pettyCash: [...prev.pettyCash, newPettyCash] }));
+    }
   };
 
-  const updatePettyCash = (id: string, pettyCash: Partial<PettyCash>) => {
-    setData(prev => ({
-      ...prev,
-      pettyCash: prev.pettyCash.map(pc => 
-        pc.id === id ? { ...pc, ...pettyCash, updatedAt: formatDate(new Date()) } : pc
-      )
-    }));
+  const updatePettyCash = async (id: string, pettyCash: Partial<PettyCash>) => {
+    try {
+      // Map frontend fields to backend format
+      const updateData: any = {};
+      if (pettyCash.projectId !== undefined) updateData.projectId = pettyCash.projectId;
+      if (pettyCash.amount !== undefined) updateData.amount = pettyCash.amount;
+      if (pettyCash.description !== undefined) updateData.description = pettyCash.description;
+      if (pettyCash.category !== undefined) updateData.category = pettyCash.category;
+      if (pettyCash.date !== undefined) updateData.date = pettyCash.date;
+      if (pettyCash.paidTo !== undefined) updateData.requestedBy = pettyCash.paidTo;
+      if (pettyCash.attachment !== undefined) updateData.receiptImage = pettyCash.attachment;
+
+      const response = await apiService.updatePettyCashEntry(id, updateData);
+      setData(prev => ({
+        ...prev,
+        pettyCash: prev.pettyCash.map(pc => {
+          if (pc.id === id) {
+            const updated = (response as any).data;
+            return {
+              ...pc,
+              ...updated,
+              id: updated._id || updated.id || pc.id,
+              date: updated.requestDate ? formatDate(new Date(updated.requestDate)) : updated.date ? formatDate(new Date(updated.date)) : pc.date,
+              projectId: updated.projectId?._id || updated.projectId || updated.projectId,
+              paidTo: updated.requestedBy?.name || updated.paidTo || pc.paidTo,
+              attachment: updated.receiptImage || updated.attachment || pc.attachment,
+              updatedAt: formatDate(new Date())
+            };
+          }
+          return pc;
+        })
+      }));
+    } catch (error) {
+      console.error('Failed to update petty cash entry:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        pettyCash: prev.pettyCash.map(pc => 
+          pc.id === id ? { ...pc, ...pettyCash, updatedAt: formatDate(new Date()) } : pc
+        )
+      }));
+    }
   };
 
-  const deletePettyCash = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      pettyCash: prev.pettyCash.filter(pc => pc.id !== id)
-    }));
+  const deletePettyCash = async (id: string) => {
+    try {
+      await apiService.deletePettyCashEntry(id);
+      setData(prev => ({
+        ...prev,
+        pettyCash: prev.pettyCash.filter(pc => pc.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete petty cash entry:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        pettyCash: prev.pettyCash.filter(pc => pc.id !== id)
+      }));
+    }
   };
 
   // Attendance actions
@@ -741,28 +944,68 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // User actions
-  const addUser = (user: Omit<User, 'id'>) => {
-    const newUser: User = {
-      ...user,
-      id: generateId()
-    };
-    setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
+  const addUser = async (user: Omit<User, 'id'>) => {
+    try {
+      const response = await apiService.createUser(user);
+      const newUser: User = {
+        ...(response as any).data,
+        id: (response as any).data._id || (response as any).data.id,
+        createdAt: formatDate(new Date()),
+        updatedAt: formatDate(new Date())
+      };
+      setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      // Fallback to localStorage if API fails
+      const newUser: User = {
+        ...user,
+        id: generateId()
+      };
+      setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
+    }
   };
 
-  const updateUser = (id: string, user: Partial<User>) => {
-    setData(prev => ({
-      ...prev,
-      users: prev.users.map(u => 
-        u.id === id ? { ...u, ...user } : u
-      )
-    }));
+  const updateUser = async (id: string, user: Partial<User>) => {
+    try {
+      const response = await apiService.updateUser(id, user);
+      setData(prev => ({
+        ...prev,
+        users: prev.users.map(u => 
+          u.id === id ? { 
+            ...u, 
+            ...(response as any).data, 
+            id: (response as any).data._id || (response as any).data.id || u.id,
+            updatedAt: formatDate(new Date()) 
+          } : u
+        )
+      }));
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        users: prev.users.map(u => 
+          u.id === id ? { ...u, ...user } : u
+        )
+      }));
+    }
   };
 
-  const deleteUser = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      users: prev.users.filter(u => u.id !== id)
-    }));
+  const deleteUser = async (id: string) => {
+    try {
+      await apiService.deleteUser(id);
+      setData(prev => ({
+        ...prev,
+        users: prev.users.filter(u => u.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        users: prev.users.filter(u => u.id !== id)
+      }));
+    }
   };
 
   // Notification actions
