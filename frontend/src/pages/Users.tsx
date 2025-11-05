@@ -119,7 +119,10 @@ const Users: React.FC = () => {
           </button>
           {hasRole(['manager']) && (
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                setEditingUser(null);
+                setShowForm(true);
+              }}
               className="w-full btn-primary flex items-center justify-center"
             >
               <Plus className="h-4 w-4 mr-2" />

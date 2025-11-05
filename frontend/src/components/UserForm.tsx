@@ -30,7 +30,18 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
         password: '',
         role: user.role
       });
+    } else {
+      // Reset form when adding new user
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'employee' as UserRole
+      });
     }
+    // Clear errors when user changes
+    setErrors({});
+    setShowPassword(false);
   }, [user]);
 
   const validateForm = () => {
@@ -79,8 +90,11 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
       // Update existing user
       updateUser(user.id, userData);
     } else {
-      // Add new user
-      addUser(userData);
+      // Add new user - include password
+      addUser({
+        ...userData,
+        password: formData.password
+      });
     }
 
     onClose();
