@@ -30,20 +30,48 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
 
-// Security middleware
-app.use(helmet());
+// CORS must come before other middleware
 app.use(cors({
-  origin: [
-    'http://localhost:5173', 
-    'http://localhost:5174',
-    'https://construction-app-o7qj-o3h1wiua9-sabaris-projects-383b3041.vercel.app',
-    'https://construction-app.vercel.app',
-    'https://*.vercel.app',  // Allow all Vercel subdomains
-    'capacitor://localhost',  // Allow Capacitor mobile app
-    'ionic://localhost',  // Allow Ionic mobile app
-    'http://localhost'  // Allow localhost for mobile development
-  ],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'https://construction-app-o7qj.vercel.app',
+      'https://construction-app-o7qj-o3h1wiua9-sabaris-projects-383b3041.vercel.app',
+      'https://construction-app.vercel.app',
+      /^https:\/\/construction-app.*\.vercel\.app$/,
+      'capacitor://localhost',
+      'ionic://localhost',
+      'http://localhost'
+    ];
+    
+    // Check if origin matches any allowed origin
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return allowedOrigin === origin;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
+}));
+
+// Security middleware (after CORS)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // Rate limiting
