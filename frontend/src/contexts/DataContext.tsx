@@ -338,16 +338,42 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Project actions
   const addProject = async (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      console.log('📝 Creating project:', project);
       const response = await apiService.createProject(project);
+      console.log('✅ Project created successfully:', response);
+      
+      const responseData = (response as any).data || response;
       const newProject: Project = {
-        ...(response as any).data,
-        id: (response as any).data._id || (response as any).data.id,
-        createdAt: formatDate(new Date()),
-        updatedAt: formatDate(new Date())
+        ...responseData,
+        id: responseData._id || responseData.id,
+        createdAt: responseData.createdAt ? formatDate(new Date(responseData.createdAt)) : formatDate(new Date()),
+        updatedAt: responseData.updatedAt ? formatDate(new Date(responseData.updatedAt)) : formatDate(new Date())
       };
+      
+      console.log('📦 Adding project to state:', newProject);
       setData(prev => ({ ...prev, projects: [...prev.projects, newProject] }));
+      
+      // Refresh projects list to ensure consistency
+      setTimeout(async () => {
+        try {
+          const projectsResponse = await apiService.getProjects();
+          const projects = (projectsResponse as any).data || projectsResponse;
+          setData(prev => ({
+            ...prev,
+            projects: projects.map((p: any) => ({
+              ...p,
+              id: p._id || p.id,
+              createdAt: p.createdAt ? formatDate(new Date(p.createdAt)) : formatDate(new Date()),
+              updatedAt: p.updatedAt ? formatDate(new Date(p.updatedAt)) : formatDate(new Date())
+            }))
+          }));
+        } catch (error) {
+          console.error('Failed to refresh projects:', error);
+        }
+      }, 500);
     } catch (error) {
-      console.error('Failed to create project:', error);
+      console.error('❌ Failed to create project:', error);
+      console.error('Error details:', error);
       // Fallback to localStorage if API fails
       const newProject: Project = {
         ...project,
