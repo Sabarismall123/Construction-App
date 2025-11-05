@@ -33,13 +33,25 @@ router.get('/:id', protect, [
 // @desc    Create new project
 // @access  Public (for testing)
 router.post('/', [
-  body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Project name must be between 2 and 100 characters'),
-  body('description').optional().trim().isLength({ min: 2, max: 500 }).withMessage('Description must be between 2 and 500 characters'),
-  body('client').trim().isLength({ min: 2, max: 100 }).withMessage('Client name must be between 2 and 100 characters'),
-  body('location').optional().trim().isLength({ min: 2, max: 200 }).withMessage('Location must be between 2 and 200 characters'),
-  body('startDate').isISO8601().withMessage('Start date must be a valid date'),
-  body('endDate').isISO8601().withMessage('End date must be a valid date'),
-  body('budget').isNumeric().withMessage('Budget must be a number'),
+  body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Project name must be between 1 and 100 characters'),
+  body('description').optional().trim().isLength({ min: 0, max: 500 }).withMessage('Description must be less than 500 characters'),
+  body('client').trim().isLength({ min: 1, max: 100 }).withMessage('Client name must be between 1 and 100 characters'),
+  body('location').optional().trim().isLength({ min: 0, max: 200 }).withMessage('Location must be less than 200 characters'),
+  body('startDate').custom((value) => {
+    if (!value) return false;
+    const date = new Date(value);
+    return !isNaN(date.getTime());
+  }).withMessage('Start date must be a valid date'),
+  body('endDate').custom((value) => {
+    if (!value) return false;
+    const date = new Date(value);
+    return !isNaN(date.getTime());
+  }).withMessage('End date must be a valid date'),
+  body('budget').custom((value) => {
+    const num = Number(value);
+    return !isNaN(num) && num >= 0;
+  }).withMessage('Budget must be a valid number'),
+  body('status').optional().isIn(['planning', 'in_progress', 'on_hold', 'completed', 'cancelled', 'active']).withMessage('Invalid status'),
   body('projectManager').optional().isMongoId().withMessage('Invalid project manager ID')
 ], createProject);
 

@@ -107,12 +107,20 @@ export const createProject = async (req: AuthRequest, res: Response, next: NextF
     // Create a default user ID for projects created without authentication
     const defaultUserId = '68f71938bb60c36e384556f8'; // Use the test user ID
     
+    // Map 'active' status to 'in_progress' for compatibility
+    const status = req.body.status === 'active' ? 'in_progress' : (req.body.status || 'planning');
+    
     const projectData = {
       ...req.body,
-      projectManager: req.user?._id || defaultUserId, // Use current user or default
+      status: status,
+      projectManager: req.user?._id || new mongoose.Types.ObjectId(defaultUserId), // Use current user or default
       location: req.body.location || 'Not specified', // Default location if not provided
       description: req.body.description || 'No description provided', // Default description if not provided
-      team: req.body.team || [] // Default empty team if not provided
+      team: req.body.team || [], // Default empty team if not provided
+      startDate: new Date(req.body.startDate),
+      endDate: new Date(req.body.endDate),
+      budget: Number(req.body.budget),
+      progress: req.body.progress || 0
     };
 
     const project = await Project.create(projectData);
