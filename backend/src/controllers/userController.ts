@@ -103,16 +103,27 @@ export const createUser = async (req: AuthRequest, res: Response, next: NextFunc
       return;
     }
 
+    // Password is required for new users
+    if (!password || password.length < 6) {
+      res.status(400).json({
+        success: false,
+        error: 'Password is required and must be at least 6 characters'
+      });
+      return;
+    }
+
     const userData = {
       name,
       email,
-      password: password || 'defaultPassword123', // Should be changed after first login
+      password, // Required - validation ensures it exists
       role: role || 'employee',
       avatar: avatar || undefined,
       isActive: isActive !== undefined ? isActive : true
     };
 
+    console.log('📝 Creating user with data:', { name, email, role: userData.role });
     const user = await User.create(userData);
+    console.log('✅ User created successfully:', user._id);
 
     const userResponse = user.toJSON();
     delete (userResponse as any).password;

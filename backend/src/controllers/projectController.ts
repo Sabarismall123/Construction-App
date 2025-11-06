@@ -110,6 +110,26 @@ export const createProject = async (req: AuthRequest, res: Response, next: NextF
     // Map 'active' status to 'in_progress' for compatibility
     const status = req.body.status === 'active' ? 'in_progress' : (req.body.status || 'planning');
     
+    // Parse dates safely
+    let startDate: Date;
+    let endDate: Date;
+    try {
+      startDate = req.body.startDate ? new Date(req.body.startDate) : new Date();
+      endDate = req.body.endDate ? new Date(req.body.endDate) : new Date();
+      
+      // Validate dates
+      if (isNaN(startDate.getTime())) {
+        startDate = new Date();
+      }
+      if (isNaN(endDate.getTime())) {
+        endDate = new Date();
+      }
+    } catch (error) {
+      console.error('Error parsing dates:', error);
+      startDate = new Date();
+      endDate = new Date();
+    }
+    
     const projectData = {
       ...req.body,
       status: status,
@@ -117,18 +137,31 @@ export const createProject = async (req: AuthRequest, res: Response, next: NextF
       location: req.body.location || 'Not specified', // Default location if not provided
       description: req.body.description || 'No description provided', // Default description if not provided
       team: req.body.team || [], // Default empty team if not provided
-      startDate: new Date(req.body.startDate),
-      endDate: new Date(req.body.endDate),
-      budget: Number(req.body.budget),
+      startDate: startDate,
+      endDate: endDate,
+      budget: Number(req.body.budget) || 0,
       progress: req.body.progress || 0
     };
+    
+    console.log('📝 Creating project with data:', projectData);
 
     const project = await Project.create(projectData);
+    console.log('✅ Project created in database:', project._id);
 
     const populatedProject = await Project.findById(project._id)
       .populate('projectManager', 'name email')
       .populate('team', 'name email');
 
+    if (!populatedProject) {
+      console.error('❌ Failed to populate project after creation');
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve created project'
+      });
+      return;
+    }
+
+    console.log('✅ Project populated successfully:', populatedProject._id);
     res.status(201).json({
       success: true,
       data: populatedProject

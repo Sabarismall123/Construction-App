@@ -29,7 +29,7 @@ router.get('/:id', [
 router.post('/', [
   body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
   body('email').isEmail().withMessage('Please provide a valid email'),
-  body('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('role').optional().isIn(['admin', 'manager', 'site_supervisor', 'employee']).withMessage('Invalid role'),
   body('avatar').optional().trim(),
   body('isActive').optional().isBoolean().withMessage('isActive must be a boolean')
