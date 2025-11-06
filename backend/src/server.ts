@@ -139,18 +139,27 @@ const connectDB = async () => {
     console.log('✅ MongoDB connected successfully');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
+    console.warn('⚠️  Server will continue without database connection');
+    console.warn('⚠️  Some features may not work until MongoDB is available');
+    // Don't exit - allow server to start without DB for development
+    // process.exit(1);
   }
 };
 
 // Start server
 const startServer = async () => {
   try {
-    await connectDB();
+    // Try to connect to database, but don't block server startup
+    connectDB().catch(err => {
+      console.warn('⚠️  Database connection will be retried in background');
+    });
+    
+    // Start server regardless of database connection status
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 Frontend URL: http://localhost:5173`);
+      console.log(`🔗 API URL: http://localhost:${PORT}/api`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
