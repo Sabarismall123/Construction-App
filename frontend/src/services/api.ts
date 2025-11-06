@@ -55,14 +55,36 @@ class ApiService {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorData: any;
+        const contentType = response.headers.get('content-type');
+        
+        try {
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+          } else {
+            const errorText = await response.text();
+            errorData = { message: errorText };
+          }
+        } catch (parseError) {
+          errorData = { message: `HTTP error! status: ${response.status}` };
+        }
+        
         console.error('❌ API Error:', {
           status: response.status,
           statusText: response.statusText,
           url,
-          error: errorText
+          error: errorData
         });
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        
+        // Create error with proper message
+        const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+        const error: any = new Error(errorMessage);
+        error.response = {
+          status: response.status,
+          statusText: response.statusText,
+          data: errorData
+        };
+        throw error;
       }
       
       const data = await response.json();

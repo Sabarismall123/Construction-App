@@ -1218,21 +1218,42 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addUser = async (user: Omit<User, 'id'>) => {
     try {
       const response = await apiService.createUser(user);
-      const newUser: User = {
-        ...(response as any).data,
-        id: (response as any).data._id || (response as any).data.id,
-        createdAt: formatDate(new Date()),
-        updatedAt: formatDate(new Date())
-      };
-      setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
-    } catch (error) {
+      
+      // Check if response has success and data
+      if ((response as any).success && (response as any).data) {
+        const newUser: User = {
+          ...(response as any).data,
+          id: (response as any).data._id || (response as any).data.id,
+          createdAt: formatDate(new Date()),
+          updatedAt: formatDate(new Date())
+        };
+        setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
+      } else {
+        // If response structure is different, try to extract data
+        const responseData = (response as any).data || response;
+        const newUser: User = {
+          ...responseData,
+          id: responseData._id || responseData.id || generateId(),
+          createdAt: formatDate(new Date()),
+          updatedAt: formatDate(new Date())
+        };
+        setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
+      }
+    } catch (error: any) {
       console.error('Failed to create user:', error);
-      // Fallback to localStorage if API fails
-      const newUser: User = {
-        ...user,
-        id: generateId()
-      };
-      setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
+      
+      // Extract error message from API response
+      let errorMessage = 'Failed to create user. Please try again.';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      // Re-throw error so form can handle it and show error message
+      throw new Error(errorMessage);
     }
   };
 

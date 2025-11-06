@@ -23,6 +23,8 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const errorToastShownRef = React.useRef(false);
+  const lastErrorRef = React.useRef<string | null>(null);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -52,6 +54,8 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
     // Clear errors when user changes
     setErrors({});
     setShowPassword(false);
+    errorToastShownRef.current = false; // Reset error flag when form resets
+    lastErrorRef.current = null; // Reset last error when form resets
   }, [user]);
 
   const validateForm = () => {
@@ -91,6 +95,8 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
     }
 
     setIsSubmitting(true);
+    errorToastShownRef.current = false; // Reset error flag for new submission
+    lastErrorRef.current = null; // Reset last error for new submission
 
     const userData = {
       name: formData.name.trim(),
@@ -123,9 +129,29 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
       
       // Close modal after successful submission
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save user:', error);
-      toast.error('Failed to save user. Please try again.');
+      
+      // Extract error message from error object
+      let errorMessage = 'Failed to save user. Please try again.';
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // Only show error toast once per unique error message
+      // This prevents the same error from showing multiple times
+      if (!errorToastShownRef.current || lastErrorRef.current !== errorMessage) {
+        errorToastShownRef.current = true;
+        lastErrorRef.current = errorMessage;
+        
+        // Show specific error message with stable ID to prevent duplicate toasts
+        toast.error(errorMessage, {
+          duration: 5000,
+          id: 'user-form-error' // Stable ID - react-hot-toast will replace existing toast with same ID
+        });
+      }
       // Don't close modal on error so user can fix and retry
     } finally {
       setIsSubmitting(false);
@@ -150,20 +176,23 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-4 text-center sm:items-center sm:block sm:p-0">
         <div 
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
           onClick={handleClose}
         />
         
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-10">
+        <div 
+          className="inline-block w-full max-w-sm mx-auto align-bottom bg-white rounded-t-lg sm:rounded-lg text-left shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg relative z-10 max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <div className="sm:flex sm:items-start">
-                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 sm:mx-0 sm:h-10 sm:w-10">
-                  <UserIcon className="h-6 w-6 text-primary-600" />
+              <div className="flex items-start">
+                <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-primary-100">
+                  <UserIcon className="h-5 w-5 text-primary-600" />
                 </div>
-                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                <div className="ml-4 w-full">
                   <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
                     {user ? 'Edit User' : 'Add New User'}
                   </h3>
@@ -180,6 +209,8 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                         id="name"
                         value={formData.name}
                         onChange={handleChange}
+                        disabled={isSubmitting}
+                        autoComplete="name"
                         className={`mt-1 input ${errors.name ? 'border-red-300' : ''}`}
                         placeholder="Enter full name"
                       />
@@ -203,6 +234,8 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                           id="email"
                           value={formData.email}
                           onChange={handleChange}
+                          disabled={isSubmitting}
+                          autoComplete="email"
                           className={`input pl-10 ${errors.email ? 'border-red-300' : ''}`}
                           placeholder="Enter email address"
                         />
@@ -224,6 +257,8 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                           id="password"
                           value={formData.password}
                           onChange={handleChange}
+                          disabled={isSubmitting}
+                          autoComplete="new-password"
                           className={`input pr-10 ${errors.password ? 'border-red-300' : ''}`}
                           placeholder={user ? 'Leave blank to keep current password' : 'Enter password'}
                         />
@@ -258,7 +293,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                           id="role"
                           value={formData.role}
                           onChange={handleChange}
-                          disabled={!hasRole(['manager'])}
+                          disabled={!hasRole(['manager']) || isSubmitting}
                           className={`input pl-10 ${!hasRole(['manager']) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                         >
                           {Object.entries(ROLES).map(([key, label]) => (
@@ -279,17 +314,17 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
               </div>
             </div>
             
-            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse sm:space-x-3 sm:space-x-reverse">
               <button
                 type="submit"
-                className="btn-primary"
+                className="w-full sm:w-auto btn-primary"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Saving...' : (user ? 'Update User' : 'Add User')}
               </button>
               <button
                 type="button"
-                className="btn-secondary mr-3"
+                className="w-full sm:w-auto btn-secondary mt-3 sm:mt-0 sm:mr-3"
                 onClick={handleClose}
                 disabled={isSubmitting}
               >
