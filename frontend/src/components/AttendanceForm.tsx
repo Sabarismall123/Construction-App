@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Attendance } from '@/types';
 import { ATTENDANCE_STATUSES } from '@/constants';
+import { toast } from 'react-hot-toast';
 
 interface AttendanceFormProps {
   attendance?: Attendance | null;
@@ -24,6 +25,15 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
     status: 'present'
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   useEffect(() => {
     if (attendance) {
@@ -67,35 +77,61 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const attendanceData = {
-      employeeName: formData.labourName.trim(),
-      mobileNumber: formData.mobileNumber.trim(),
-      projectId: formData.projectId,
-      labourType: formData.labourType.trim(),
-      date: attendance?.date || today,
-      timeIn: formData.timeIn,
-      timeOut: formData.timeOut,
-      status: formData.status as any,
-      hours: parseInt(formData.hours) || 8
-    };
+    setIsSubmitting(true);
 
-    if (attendance) {
-      // Update existing attendance
-      updateAttendance(attendance.id, attendanceData);
-    } else {
-      // Add new attendance
-      addAttendance(attendanceData);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const attendanceData = {
+        employeeName: formData.labourName.trim(),
+        mobileNumber: formData.mobileNumber.trim(),
+        projectId: formData.projectId,
+        labourType: formData.labourType.trim(),
+        date: attendance?.date || today,
+        timeIn: formData.timeIn,
+        timeOut: formData.timeOut,
+        status: formData.status as any,
+        hours: parseInt(formData.hours) || 8
+      };
+
+      if (attendance) {
+        // Update existing attendance
+        await updateAttendance(attendance.id, attendanceData);
+        toast.success('Labour updated successfully');
+      } else {
+        // Add new attendance
+        await addAttendance(attendanceData);
+        toast.success('Labour created successfully');
+      }
+
+      // Reset form
+      setFormData({
+        labourName: '',
+        mobileNumber: '',
+        projectId: '',
+        labourType: '',
+        timeIn: '08:00',
+        timeOut: '17:00',
+        hours: '8',
+        status: 'present'
+      });
+      setErrors({});
+
+      // Close modal after successful submission
+      onClose();
+    } catch (error) {
+      console.error('Failed to save labour:', error);
+      toast.error('Failed to save labour. Please try again.');
+      // Don't close modal on error so user can fix and retry
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
   };
 
 
@@ -114,12 +150,21 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
     return project?.name || 'Unknown Project';
   };
 
+  const handleClose = () => {
+    // Reset body scroll
+    document.body.style.overflow = '';
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
+        <div 
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+          onClick={handleClose}
+        />
         
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full relative z-10">
           <form onSubmit={handleSubmit}>
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -128,8 +173,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
               </h3>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="text-gray-400 hover:text-gray-600"
+                disabled={isSubmitting}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -297,9 +343,10 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
             <div className="flex justify-end px-6 py-4 bg-gray-50 border-t border-gray-200">
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting}
               >
-                {attendance ? 'UPDATE LABOUR' : 'CREATE NEW LABOUR'}
+                {isSubmitting ? 'Saving...' : (attendance ? 'UPDATE LABOUR' : 'CREATE NEW LABOUR')}
               </button>
             </div>
           </form>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Search, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
@@ -14,8 +14,35 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
   const { notifications, markNotificationAsRead } = useData();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   const unreadNotifications = notifications.filter(n => !n.read);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showUserMenu || showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+      // Prevent body scroll when dropdowns are open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = '';
+    };
+  }, [showUserMenu, showNotifications]);
 
   const handleLogout = () => {
     logout();
@@ -53,9 +80,12 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
           </button>
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative" ref={notificationsRef}>
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => {
+                setShowNotifications(!showNotifications);
+                setShowUserMenu(false);
+              }}
               className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 relative"
             >
               <Bell className="h-5 w-5" />
@@ -67,8 +97,8 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                <div className="p-3 border-b border-gray-200">
+              <div className="fixed right-4 top-16 w-[calc(100vw-2rem)] max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 z-[100] max-h-[calc(100vh-5rem)] flex flex-col">
+                <div className="p-3 border-b border-gray-200 flex-shrink-0">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
                     <button
@@ -79,7 +109,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-48 overflow-y-auto">
+                <div className="overflow-y-auto flex-1">
                   {notifications.length === 0 ? (
                     <div className="p-3 text-center text-gray-500 text-sm">
                       No notifications
@@ -97,17 +127,17 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
                         }}
                       >
                         <div className="flex items-start">
-                          <div className={`h-2 w-2 rounded-full mt-1.5 ${
+                          <div className={`h-2 w-2 rounded-full mt-1.5 flex-shrink-0 ${
                             notification.type === 'error' ? 'bg-red-500' :
                             notification.type === 'warning' ? 'bg-yellow-500' :
                             notification.type === 'success' ? 'bg-green-500' :
                             'bg-blue-500'
                           }`} />
-                          <div className="ml-2 flex-1">
-                            <p className="text-xs font-medium text-gray-900">
+                          <div className="ml-2 flex-1 min-w-0">
+                            <p className="text-xs font-medium text-gray-900 truncate">
                               {notification.title}
                             </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
+                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
                               {notification.message}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
@@ -124,10 +154,13 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
           </div>
 
           {/* User menu */}
-          <div className="relative">
+          <div className="relative" ref={userMenuRef}>
             <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center"
+              onClick={() => {
+                setShowUserMenu(!showUserMenu);
+                setShowNotifications(false);
+              }}
+              className="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0"
             >
               <span className="text-white font-medium text-xs">
                 {getInitials(user?.name || 'User')}
@@ -135,20 +168,28 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                <div className="py-1">
-                  <div className="px-3 py-2 border-b border-gray-100">
-                    <p className="text-xs font-medium text-gray-900">{user?.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{user?.role?.replace('_', ' ')}</p>
+              <>
+                {/* Backdrop overlay */}
+                <div 
+                  className="fixed inset-0 bg-black bg-opacity-20 z-[90]"
+                  onClick={() => setShowUserMenu(false)}
+                />
+                {/* Dropdown menu */}
+                <div className="fixed right-4 top-16 w-[calc(100vw-2rem)] max-w-xs bg-white rounded-lg shadow-xl border border-gray-200 z-[100]">
+                  <div className="py-1">
+                    <div className="px-3 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
+                      <p className="text-xs text-gray-500 capitalize mt-0.5">{user?.role?.replace('_', ' ') || 'Employee'}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      Sign out
+                    </button>
                   </div>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center w-full px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                  >
-                    Sign out
-                  </button>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>

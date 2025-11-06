@@ -206,7 +206,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         console.log('🔄 Loading data from API...');
         // Try to load projects, tasks, issues, attendance, and resources from API first
-        const [projectsResponse, tasksResponse, issuesResponse, attendanceResponse, resourcesResponse, pettyCashResponse, commercialResponse, usersResponse] = await Promise.all([
+        const [projectsResponse, tasksResponse, issuesResponse, attendanceResponse, resourcesResponse, pettyCashResponse, commercialResponse, usersResponse, inventoryResponse, materialIssuesResponse, materialReturnsResponse, materialConsumptionsResponse] = await Promise.all([
           apiService.getProjects(),
           apiService.getTasks(),
           apiService.getIssues(),
@@ -214,7 +214,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           apiService.getResources(),
           apiService.getPettyCashEntries(),
           apiService.getCommercialEntries(),
-          apiService.getUsers()
+          apiService.getUsers(),
+          apiService.getInventoryItems(),
+          apiService.getMaterialIssues(),
+          apiService.getMaterialReturns(),
+          apiService.getMaterialConsumptions()
         ]);
         
         console.log('📊 API Responses:', {
@@ -225,7 +229,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           resources: resourcesResponse,
           pettyCash: pettyCashResponse,
           commercial: commercialResponse,
-          users: usersResponse
+          users: usersResponse,
+          inventory: inventoryResponse,
+          materialIssues: materialIssuesResponse,
+          materialReturns: materialReturnsResponse,
+          materialConsumptions: materialConsumptionsResponse
         });
         
         const projects = (projectsResponse as any).data || projectsResponse;
@@ -236,14 +244,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const pettyCash = (pettyCashResponse as any).data || pettyCashResponse;
         const commercial = (commercialResponse as any).data || commercialResponse;
         const users = (usersResponse as any).data || usersResponse;
+        const inventory = (inventoryResponse as any).data || inventoryResponse;
+        const materialIssues = (materialIssuesResponse as any).data || materialIssuesResponse;
+        const materialReturns = (materialReturnsResponse as any).data || materialReturnsResponse;
+        const materialConsumptions = (materialConsumptionsResponse as any).data || materialConsumptionsResponse;
         
         setData(prev => ({
           ...prev,
           projects: projects.map((p: any) => ({
             ...p,
             id: p._id || p.id,
-            createdAt: new Date(p.createdAt || Date.now()),
-            updatedAt: new Date(p.updatedAt || Date.now())
+            startDate: p.startDate ? (typeof p.startDate === 'string' ? p.startDate : formatDate(new Date(p.startDate), 'yyyy-MM-dd')) : formatDate(new Date(), 'yyyy-MM-dd'),
+            endDate: p.endDate ? (typeof p.endDate === 'string' ? p.endDate : formatDate(new Date(p.endDate), 'yyyy-MM-dd')) : formatDate(new Date(), 'yyyy-MM-dd'),
+            createdAt: p.createdAt ? formatDate(new Date(p.createdAt), 'MMM dd, yyyy') : formatDate(new Date(), 'MMM dd, yyyy'),
+            updatedAt: p.updatedAt ? formatDate(new Date(p.updatedAt), 'MMM dd, yyyy') : formatDate(new Date(), 'MMM dd, yyyy')
           })),
           tasks: tasks.map((t: any) => ({
             ...t,
@@ -306,10 +320,61 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: u._id || u.id,
             createdAt: formatDate(new Date(u.createdAt || Date.now())),
             updatedAt: formatDate(new Date(u.updatedAt || Date.now()))
+          })),
+          inventory: inventory.map((i: any) => ({
+            ...i,
+            id: i._id || i.id,
+            createdAt: formatDate(new Date(i.createdAt || Date.now())),
+            updatedAt: formatDate(new Date(i.updatedAt || Date.now()))
+          })),
+          materialIssues: materialIssues.map((mi: any) => ({
+            ...mi,
+            id: mi._id || mi.id,
+            projectId: mi.projectId?._id || mi.projectId || mi.projectId,
+            taskId: mi.taskId?._id || mi.taskId || mi.taskId,
+            materialId: mi.materialId?._id || mi.materialId || mi.materialId,
+            issuedBy: mi.issuedBy?._id || mi.issuedBy || mi.issuedBy,
+            issuedDate: mi.issuedDate ? formatDate(new Date(mi.issuedDate), 'yyyy-MM-dd') : formatDate(new Date(), 'yyyy-MM-dd'),
+            createdAt: formatDate(new Date(mi.createdAt || Date.now()))
+          })),
+          materialReturns: materialReturns.map((mr: any) => ({
+            ...mr,
+            id: mr._id || mr.id,
+            projectId: mr.projectId?._id || mr.projectId || mr.projectId,
+            taskId: mr.taskId?._id || mr.taskId || mr.taskId,
+            materialId: mr.materialId?._id || mr.materialId || mr.materialId,
+            returnedBy: mr.returnedBy?._id || mr.returnedBy || mr.returnedBy,
+            returnDate: mr.returnDate ? formatDate(new Date(mr.returnDate), 'yyyy-MM-dd') : formatDate(new Date(), 'yyyy-MM-dd'),
+            createdAt: formatDate(new Date(mr.createdAt || Date.now()))
+          })),
+          materialConsumptions: materialConsumptions.map((mc: any) => ({
+            ...mc,
+            id: mc._id || mc.id,
+            projectId: mc.projectId?._id || mc.projectId || mc.projectId,
+            taskId: mc.taskId?._id || mc.taskId || mc.taskId,
+            materialId: mc.materialId?._id || mc.materialId || mc.materialId,
+            recordedBy: mc.recordedBy?._id || mc.recordedBy || mc.recordedBy,
+            consumptionDate: mc.consumptionDate ? formatDate(new Date(mc.consumptionDate), 'yyyy-MM-dd') : formatDate(new Date(), 'yyyy-MM-dd'),
+            createdAt: formatDate(new Date(mc.createdAt || Date.now()))
           }))
         }));
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Failed to load data from API:', error);
+        console.error('Error details:', {
+          message: error?.message,
+          stack: error?.stack,
+          hostname: window.location.hostname,
+          userAgent: navigator.userAgent,
+          apiUrl: import.meta.env.VITE_API_URL || 'NOT SET'
+        });
+        
+        // Show error message on mobile
+        if (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+          console.warn('📱 Mobile device detected - API might not be configured correctly');
+          console.warn('📱 Make sure VITE_API_URL is set in Vercel environment variables');
+          console.warn('📱 Current API URL:', import.meta.env.VITE_API_URL || 'NOT SET - Using default');
+        }
+        
         console.log('🔄 Falling back to localStorage...');
         // Fallback to localStorage
         const savedData = localStorage.getItem('construction-management-data');
@@ -346,31 +411,38 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const newProject: Project = {
         ...responseData,
         id: responseData._id || responseData.id,
-        createdAt: responseData.createdAt ? formatDate(new Date(responseData.createdAt)) : formatDate(new Date()),
-        updatedAt: responseData.updatedAt ? formatDate(new Date(responseData.updatedAt)) : formatDate(new Date())
+        startDate: responseData.startDate ? (typeof responseData.startDate === 'string' ? responseData.startDate : formatDate(new Date(responseData.startDate), 'yyyy-MM-dd')) : project.startDate,
+        endDate: responseData.endDate ? (typeof responseData.endDate === 'string' ? responseData.endDate : formatDate(new Date(responseData.endDate), 'yyyy-MM-dd')) : project.endDate,
+        createdAt: responseData.createdAt ? formatDate(new Date(responseData.createdAt), 'MMM dd, yyyy') : formatDate(new Date(), 'MMM dd, yyyy'),
+        updatedAt: responseData.updatedAt ? formatDate(new Date(responseData.updatedAt), 'MMM dd, yyyy') : formatDate(new Date(), 'MMM dd, yyyy')
       };
       
       console.log('📦 Adding project to state:', newProject);
       setData(prev => ({ ...prev, projects: [...prev.projects, newProject] }));
       
-      // Refresh projects list to ensure consistency
+      // Refresh projects list to ensure consistency - wait longer for database write
       setTimeout(async () => {
         try {
+          console.log('🔄 Refreshing projects list...');
           const projectsResponse = await apiService.getProjects();
           const projects = (projectsResponse as any).data || projectsResponse;
+          console.log('📊 Refreshed projects:', projects);
           setData(prev => ({
             ...prev,
             projects: projects.map((p: any) => ({
               ...p,
               id: p._id || p.id,
-              createdAt: p.createdAt ? formatDate(new Date(p.createdAt)) : formatDate(new Date()),
-              updatedAt: p.updatedAt ? formatDate(new Date(p.updatedAt)) : formatDate(new Date())
+              startDate: p.startDate ? (typeof p.startDate === 'string' ? p.startDate : formatDate(new Date(p.startDate), 'yyyy-MM-dd')) : formatDate(new Date(), 'yyyy-MM-dd'),
+              endDate: p.endDate ? (typeof p.endDate === 'string' ? p.endDate : formatDate(new Date(p.endDate), 'yyyy-MM-dd')) : formatDate(new Date(), 'yyyy-MM-dd'),
+              createdAt: p.createdAt ? formatDate(new Date(p.createdAt), 'MMM dd, yyyy') : formatDate(new Date(), 'MMM dd, yyyy'),
+              updatedAt: p.updatedAt ? formatDate(new Date(p.updatedAt), 'MMM dd, yyyy') : formatDate(new Date(), 'MMM dd, yyyy')
             }))
           }));
+          console.log('✅ Projects list refreshed successfully');
         } catch (error) {
-          console.error('Failed to refresh projects:', error);
+          console.error('❌ Failed to refresh projects:', error);
         }
-      }, 500);
+      }, 1000);
     } catch (error) {
       console.error('❌ Failed to create project:', error);
       console.error('Error details:', error);
@@ -839,30 +911,71 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Inventory actions
-  const addInventoryItem = (item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newItem: InventoryItem = {
-      ...item,
-      id: generateId(),
-      createdAt: formatDate(new Date()),
-      updatedAt: formatDate(new Date())
-    };
-    setData(prev => ({ ...prev, inventory: [...prev.inventory, newItem] }));
+  const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const response = await apiService.createInventoryItem(item);
+      const responseData = (response as any).data || response;
+      const newItem: InventoryItem = {
+        ...responseData,
+        id: responseData._id || responseData.id,
+        createdAt: formatDate(new Date(responseData.createdAt || Date.now())),
+        updatedAt: formatDate(new Date(responseData.updatedAt || Date.now()))
+      };
+      setData(prev => ({ ...prev, inventory: [...prev.inventory, newItem] }));
+    } catch (error) {
+      console.error('Failed to create inventory item:', error);
+      // Fallback to localStorage if API fails
+      const newItem: InventoryItem = {
+        ...item,
+        id: generateId(),
+        createdAt: formatDate(new Date()),
+        updatedAt: formatDate(new Date())
+      };
+      setData(prev => ({ ...prev, inventory: [...prev.inventory, newItem] }));
+    }
   };
 
-  const updateInventoryItem = (id: string, item: Partial<InventoryItem>) => {
-    setData(prev => ({
-      ...prev,
-      inventory: prev.inventory.map(i => 
-        i.id === id ? { ...i, ...item, updatedAt: formatDate(new Date()) } : i
-      )
-    }));
+  const updateInventoryItem = async (id: string, item: Partial<InventoryItem>) => {
+    try {
+      const response = await apiService.updateInventoryItem(id, item);
+      setData(prev => ({
+        ...prev,
+        inventory: prev.inventory.map(i => 
+          i.id === id ? { 
+            ...i, 
+            ...(response as any).data, 
+            id: (response as any).data._id || (response as any).data.id || i.id,
+            updatedAt: formatDate(new Date()) 
+          } : i
+        )
+      }));
+    } catch (error) {
+      console.error('Failed to update inventory item:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        inventory: prev.inventory.map(i => 
+          i.id === id ? { ...i, ...item, updatedAt: formatDate(new Date()) } : i
+        )
+      }));
+    }
   };
 
-  const deleteInventoryItem = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      inventory: prev.inventory.filter(i => i.id !== id)
-    }));
+  const deleteInventoryItem = async (id: string) => {
+    try {
+      await apiService.deleteInventoryItem(id);
+      setData(prev => ({
+        ...prev,
+        inventory: prev.inventory.filter(i => i.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete inventory item:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        inventory: prev.inventory.filter(i => i.id !== id)
+      }));
+    }
   };
 
   // Site Transfer actions
@@ -892,81 +1005,213 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Material Issue actions
-  const addMaterialIssue = (issue: Omit<MaterialIssue, 'id' | 'createdAt'>) => {
-    const newIssue: MaterialIssue = {
-      ...issue,
-      id: generateId(),
-      createdAt: formatDate(new Date())
-    };
-    setData(prev => ({ ...prev, materialIssues: [...prev.materialIssues, newIssue] }));
+  const addMaterialIssue = async (issue: Omit<MaterialIssue, 'id' | 'createdAt'>) => {
+    try {
+      const response = await apiService.createMaterialIssue(issue);
+      const responseData = (response as any).data || response;
+      const newIssue: MaterialIssue = {
+        ...responseData,
+        id: responseData._id || responseData.id,
+        projectId: responseData.projectId?._id || responseData.projectId || issue.projectId,
+        taskId: responseData.taskId?._id || responseData.taskId || issue.taskId,
+        materialId: responseData.materialId?._id || responseData.materialId || issue.materialId,
+        issuedBy: responseData.issuedBy?._id || responseData.issuedBy || issue.issuedBy,
+        issuedDate: responseData.issuedDate ? formatDate(new Date(responseData.issuedDate), 'yyyy-MM-dd') : issue.issuedDate,
+        createdAt: formatDate(new Date(responseData.createdAt || Date.now()))
+      };
+      setData(prev => ({ ...prev, materialIssues: [...prev.materialIssues, newIssue] }));
+    } catch (error) {
+      console.error('Failed to create material issue:', error);
+      // Fallback to localStorage if API fails
+      const newIssue: MaterialIssue = {
+        ...issue,
+        id: generateId(),
+        createdAt: formatDate(new Date())
+      };
+      setData(prev => ({ ...prev, materialIssues: [...prev.materialIssues, newIssue] }));
+    }
   };
 
-  const updateMaterialIssue = (id: string, issue: Partial<MaterialIssue>) => {
-    setData(prev => ({
-      ...prev,
-      materialIssues: prev.materialIssues.map(mi => 
-        mi.id === id ? { ...mi, ...issue } : mi
-      )
-    }));
+  const updateMaterialIssue = async (id: string, issue: Partial<MaterialIssue>) => {
+    try {
+      const response = await apiService.updateMaterialIssue(id, issue);
+      setData(prev => ({
+        ...prev,
+        materialIssues: prev.materialIssues.map(mi => 
+          mi.id === id ? { 
+            ...mi, 
+            ...(response as any).data, 
+            id: (response as any).data._id || (response as any).data.id || mi.id 
+          } : mi
+        )
+      }));
+    } catch (error) {
+      console.error('Failed to update material issue:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        materialIssues: prev.materialIssues.map(mi => 
+          mi.id === id ? { ...mi, ...issue } : mi
+        )
+      }));
+    }
   };
 
-  const deleteMaterialIssue = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      materialIssues: prev.materialIssues.filter(mi => mi.id !== id)
-    }));
+  const deleteMaterialIssue = async (id: string) => {
+    try {
+      await apiService.deleteMaterialIssue(id);
+      setData(prev => ({
+        ...prev,
+        materialIssues: prev.materialIssues.filter(mi => mi.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete material issue:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        materialIssues: prev.materialIssues.filter(mi => mi.id !== id)
+      }));
+    }
   };
 
   // Material Return actions
-  const addMaterialReturn = (returnItem: Omit<MaterialReturn, 'id' | 'createdAt'>) => {
-    const newReturn: MaterialReturn = {
-      ...returnItem,
-      id: generateId(),
-      createdAt: formatDate(new Date())
-    };
-    setData(prev => ({ ...prev, materialReturns: [...prev.materialReturns, newReturn] }));
+  const addMaterialReturn = async (returnItem: Omit<MaterialReturn, 'id' | 'createdAt'>) => {
+    try {
+      const response = await apiService.createMaterialReturn(returnItem);
+      const responseData = (response as any).data || response;
+      const newReturn: MaterialReturn = {
+        ...responseData,
+        id: responseData._id || responseData.id,
+        projectId: responseData.projectId?._id || responseData.projectId || returnItem.projectId,
+        taskId: responseData.taskId?._id || responseData.taskId || returnItem.taskId,
+        materialId: responseData.materialId?._id || responseData.materialId || returnItem.materialId,
+        returnedBy: responseData.returnedBy?._id || responseData.returnedBy || returnItem.returnedBy,
+        returnDate: responseData.returnDate ? formatDate(new Date(responseData.returnDate), 'yyyy-MM-dd') : returnItem.returnDate,
+        createdAt: formatDate(new Date(responseData.createdAt || Date.now()))
+      };
+      setData(prev => ({ ...prev, materialReturns: [...prev.materialReturns, newReturn] }));
+    } catch (error) {
+      console.error('Failed to create material return:', error);
+      // Fallback to localStorage if API fails
+      const newReturn: MaterialReturn = {
+        ...returnItem,
+        id: generateId(),
+        createdAt: formatDate(new Date())
+      };
+      setData(prev => ({ ...prev, materialReturns: [...prev.materialReturns, newReturn] }));
+    }
   };
 
-  const updateMaterialReturn = (id: string, returnItem: Partial<MaterialReturn>) => {
-    setData(prev => ({
-      ...prev,
-      materialReturns: prev.materialReturns.map(mr => 
-        mr.id === id ? { ...mr, ...returnItem } : mr
-      )
-    }));
+  const updateMaterialReturn = async (id: string, returnItem: Partial<MaterialReturn>) => {
+    try {
+      const response = await apiService.updateMaterialReturn(id, returnItem);
+      setData(prev => ({
+        ...prev,
+        materialReturns: prev.materialReturns.map(mr => 
+          mr.id === id ? { 
+            ...mr, 
+            ...(response as any).data, 
+            id: (response as any).data._id || (response as any).data.id || mr.id 
+          } : mr
+        )
+      }));
+    } catch (error) {
+      console.error('Failed to update material return:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        materialReturns: prev.materialReturns.map(mr => 
+          mr.id === id ? { ...mr, ...returnItem } : mr
+        )
+      }));
+    }
   };
 
-  const deleteMaterialReturn = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      materialReturns: prev.materialReturns.filter(mr => mr.id !== id)
-    }));
+  const deleteMaterialReturn = async (id: string) => {
+    try {
+      await apiService.deleteMaterialReturn(id);
+      setData(prev => ({
+        ...prev,
+        materialReturns: prev.materialReturns.filter(mr => mr.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete material return:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        materialReturns: prev.materialReturns.filter(mr => mr.id !== id)
+      }));
+    }
   };
 
   // Material Consumption actions
-  const addMaterialConsumption = (consumption: Omit<MaterialConsumption, 'id' | 'createdAt'>) => {
-    const newConsumption: MaterialConsumption = {
-      ...consumption,
-      id: generateId(),
-      createdAt: formatDate(new Date())
-    };
-    setData(prev => ({ ...prev, materialConsumptions: [...prev.materialConsumptions, newConsumption] }));
+  const addMaterialConsumption = async (consumption: Omit<MaterialConsumption, 'id' | 'createdAt'>) => {
+    try {
+      const response = await apiService.createMaterialConsumption(consumption);
+      const responseData = (response as any).data || response;
+      const newConsumption: MaterialConsumption = {
+        ...responseData,
+        id: responseData._id || responseData.id,
+        projectId: responseData.projectId?._id || responseData.projectId || consumption.projectId,
+        taskId: responseData.taskId?._id || responseData.taskId || consumption.taskId,
+        materialId: responseData.materialId?._id || responseData.materialId || consumption.materialId,
+        recordedBy: responseData.recordedBy?._id || responseData.recordedBy || consumption.recordedBy,
+        consumptionDate: responseData.consumptionDate ? formatDate(new Date(responseData.consumptionDate), 'yyyy-MM-dd') : consumption.consumptionDate,
+        createdAt: formatDate(new Date(responseData.createdAt || Date.now()))
+      };
+      setData(prev => ({ ...prev, materialConsumptions: [...prev.materialConsumptions, newConsumption] }));
+    } catch (error) {
+      console.error('Failed to create material consumption:', error);
+      // Fallback to localStorage if API fails
+      const newConsumption: MaterialConsumption = {
+        ...consumption,
+        id: generateId(),
+        createdAt: formatDate(new Date())
+      };
+      setData(prev => ({ ...prev, materialConsumptions: [...prev.materialConsumptions, newConsumption] }));
+    }
   };
 
-  const updateMaterialConsumption = (id: string, consumption: Partial<MaterialConsumption>) => {
-    setData(prev => ({
-      ...prev,
-      materialConsumptions: prev.materialConsumptions.map(mc => 
-        mc.id === id ? { ...mc, ...consumption } : mc
-      )
-    }));
+  const updateMaterialConsumption = async (id: string, consumption: Partial<MaterialConsumption>) => {
+    try {
+      const response = await apiService.updateMaterialConsumption(id, consumption);
+      setData(prev => ({
+        ...prev,
+        materialConsumptions: prev.materialConsumptions.map(mc => 
+          mc.id === id ? { 
+            ...mc, 
+            ...(response as any).data, 
+            id: (response as any).data._id || (response as any).data.id || mc.id 
+          } : mc
+        )
+      }));
+    } catch (error) {
+      console.error('Failed to update material consumption:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        materialConsumptions: prev.materialConsumptions.map(mc => 
+          mc.id === id ? { ...mc, ...consumption } : mc
+        )
+      }));
+    }
   };
 
-  const deleteMaterialConsumption = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      materialConsumptions: prev.materialConsumptions.filter(mc => mc.id !== id)
-    }));
+  const deleteMaterialConsumption = async (id: string) => {
+    try {
+      await apiService.deleteMaterialConsumption(id);
+      setData(prev => ({
+        ...prev,
+        materialConsumptions: prev.materialConsumptions.filter(mc => mc.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete material consumption:', error);
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        materialConsumptions: prev.materialConsumptions.filter(mc => mc.id !== id)
+      }));
+    }
   };
 
   // User actions

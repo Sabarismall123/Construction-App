@@ -623,6 +623,32 @@
     max-height: calc(100svh - 120px) !important;
   }
 
+  /* Fixed position dropdowns should stay within viewport */
+  .fixed {
+    position: fixed !important;
+    z-index: 100 !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+  
+  /* Ensure dropdowns don't get cut off */
+  div[class*="fixed"] {
+    max-height: calc(100vh - 4rem) !important;
+    max-height: calc(100dvh - 4rem) !important;
+    max-height: calc(100svh - 4rem) !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Backdrop overlay for dropdowns */
+  .fixed.inset-0 {
+    z-index: 90 !important;
+  }
+  
+  /* Header dropdown positioning */
+  header + div[class*="fixed"],
+  header ~ div[class*="fixed"] {
+    top: 3.5rem !important; /* 56px - header height */
+  }
+
   /* Ensure proper flex behavior */
   .flex-1 {
     flex: 1 1 0% !important;

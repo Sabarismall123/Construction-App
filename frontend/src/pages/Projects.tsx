@@ -149,7 +149,7 @@ const Projects: React.FC = () => {
       </div>
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-4 pb-20">
         {filteredProjects.map((project) => (
           <div 
             key={project.id} 
@@ -211,12 +211,12 @@ const Projects: React.FC = () => {
               <div className="mt-3">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-gray-500">Progress</span>
-                  <span className="font-medium">{project.progress}%</span>
+                  <span className="font-medium">{(project.progress || 0)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${project.progress}%` }}
+                    style={{ width: `${Math.max(0, Math.min(100, project.progress || 0))}%` }}
                   />
                 </div>
               </div>

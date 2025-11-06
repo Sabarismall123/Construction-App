@@ -3,6 +3,11 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Package, Truck, Upload, Download, BarChart3, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { COMMERCIAL_SUBMODULES } from '@/constants';
+import InventoryForm from '@/components/InventoryForm';
+import MaterialIssueForm from '@/components/MaterialIssueForm';
+import MaterialReturnForm from '@/components/MaterialReturnForm';
+import MaterialConsumptionForm from '@/components/MaterialConsumptionForm';
+import { InventoryItem, MaterialIssue, MaterialReturn, MaterialConsumption } from '@/types';
 
 const Commercial: React.FC = () => {
   const { hasPermission } = useAuth();
@@ -81,28 +86,50 @@ const Commercial: React.FC = () => {
 };
 
 // Placeholder components for each submodule
-const InventoryContent: React.FC = () => (
-  <div className="card-body p-4">
-    <div className="flex flex-col space-y-4">
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-xl font-semibold text-gray-900">Inventory Management</h2>
-        <button className="w-full btn-primary flex items-center justify-center">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Item
-        </button>
-      </div>
-      <div className="text-center py-12">
-        <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <Package className="h-6 w-6 text-gray-400" />
+const InventoryContent: React.FC = () => {
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+
+  return (
+    <>
+      <div className="card-body p-4">
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-2">
+            <h2 className="text-xl font-semibold text-gray-900">Inventory Management</h2>
+            <button 
+              onClick={() => {
+                setEditingItem(null);
+                setShowForm(true);
+              }}
+              className="w-full btn-primary flex items-center justify-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Item
+            </button>
+          </div>
+          <div className="text-center py-12">
+            <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <Package className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Inventory Management</h3>
+            <p className="text-sm text-gray-500">
+              Manage your material inventory, track stock levels, and set thresholds.
+            </p>
+          </div>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Inventory Management</h3>
-        <p className="text-sm text-gray-500">
-          Manage your material inventory, track stock levels, and set thresholds.
-        </p>
       </div>
-    </div>
-  </div>
-);
+      {showForm && (
+        <InventoryForm
+          item={editingItem}
+          onClose={() => {
+            setShowForm(false);
+            setEditingItem(null);
+          }}
+        />
+      )}
+    </>
+  );
+};
 
 const SiteTransfersContent: React.FC = () => (
   <div className="card-body p-4">
@@ -127,73 +154,139 @@ const SiteTransfersContent: React.FC = () => (
   </div>
 );
 
-const MaterialIssueContent: React.FC = () => (
-  <div className="card-body p-4">
-    <div className="flex flex-col space-y-4">
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-xl font-semibold text-gray-900">Material Issue</h2>
-        <button className="w-full btn-primary flex items-center justify-center">
-          <Plus className="h-4 w-4 mr-2" />
-          Issue Material
-        </button>
-      </div>
-      <div className="text-center py-12">
-        <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <Upload className="h-6 w-6 text-gray-400" />
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Material Issue</h3>
-        <p className="text-sm text-gray-500">
-          Issue materials to projects and tasks for construction work.
-        </p>
-      </div>
-    </div>
-  </div>
-);
+const MaterialIssueContent: React.FC = () => {
+  const [showForm, setShowForm] = useState(false);
+  const [editingIssue, setEditingIssue] = useState<MaterialIssue | null>(null);
 
-const MaterialReturnContent: React.FC = () => (
-  <div className="card-body p-4">
-    <div className="flex flex-col space-y-4">
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-xl font-semibold text-gray-900">Material Return</h2>
-        <button className="w-full btn-primary flex items-center justify-center">
-          <Plus className="h-4 w-4 mr-2" />
-          Return Material
-        </button>
-      </div>
-      <div className="text-center py-12">
-        <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <Download className="h-6 w-6 text-gray-400" />
+  return (
+    <>
+      <div className="card-body p-4">
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-2">
+            <h2 className="text-xl font-semibold text-gray-900">Material Issue</h2>
+            <button 
+              onClick={() => {
+                setEditingIssue(null);
+                setShowForm(true);
+              }}
+              className="w-full btn-primary flex items-center justify-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Issue Material
+            </button>
+          </div>
+          <div className="text-center py-12">
+            <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <Upload className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Material Issue</h3>
+            <p className="text-sm text-gray-500">
+              Issue materials to projects and tasks for construction work.
+            </p>
+          </div>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Material Return</h3>
-        <p className="text-sm text-gray-500">
-          Return unused materials back to inventory.
-        </p>
       </div>
-    </div>
-  </div>
-);
+      {showForm && (
+        <MaterialIssueForm
+          issue={editingIssue}
+          onClose={() => {
+            setShowForm(false);
+            setEditingIssue(null);
+          }}
+        />
+      )}
+    </>
+  );
+};
 
-const ConsumptionsContent: React.FC = () => (
-  <div className="card-body p-4">
-    <div className="flex flex-col space-y-4">
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-xl font-semibold text-gray-900">Material Consumptions</h2>
-        <button className="w-full btn-primary flex items-center justify-center">
-          <Plus className="h-4 w-4 mr-2" />
-          Record Consumption
-        </button>
-      </div>
-      <div className="text-center py-12">
-        <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <BarChart3 className="h-6 w-6 text-gray-400" />
+const MaterialReturnContent: React.FC = () => {
+  const [showForm, setShowForm] = useState(false);
+  const [editingReturn, setEditingReturn] = useState<MaterialReturn | null>(null);
+
+  return (
+    <>
+      <div className="card-body p-4">
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-2">
+            <h2 className="text-xl font-semibold text-gray-900">Material Return</h2>
+            <button 
+              onClick={() => {
+                setEditingReturn(null);
+                setShowForm(true);
+              }}
+              className="w-full btn-primary flex items-center justify-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Return Material
+            </button>
+          </div>
+          <div className="text-center py-12">
+            <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <Download className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Material Return</h3>
+            <p className="text-sm text-gray-500">
+              Return unused materials back to inventory.
+            </p>
+          </div>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Material Consumptions</h3>
-        <p className="text-sm text-gray-500">
-          Track material consumption per project and task.
-        </p>
       </div>
-    </div>
-  </div>
-);
+      {showForm && (
+        <MaterialReturnForm
+          returnItem={editingReturn}
+          onClose={() => {
+            setShowForm(false);
+            setEditingReturn(null);
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+const ConsumptionsContent: React.FC = () => {
+  const [showForm, setShowForm] = useState(false);
+  const [editingConsumption, setEditingConsumption] = useState<MaterialConsumption | null>(null);
+
+  return (
+    <>
+      <div className="card-body p-4">
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-2">
+            <h2 className="text-xl font-semibold text-gray-900">Material Consumptions</h2>
+            <button 
+              onClick={() => {
+                setEditingConsumption(null);
+                setShowForm(true);
+              }}
+              className="w-full btn-primary flex items-center justify-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Record Consumption
+            </button>
+          </div>
+          <div className="text-center py-12">
+            <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <BarChart3 className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Material Consumptions</h3>
+            <p className="text-sm text-gray-500">
+              Track material consumption per project and task.
+            </p>
+          </div>
+        </div>
+      </div>
+      {showForm && (
+        <MaterialConsumptionForm
+          consumption={editingConsumption}
+          onClose={() => {
+            setShowForm(false);
+            setEditingConsumption(null);
+          }}
+        />
+      )}
+    </>
+  );
+};
 
 export default Commercial;

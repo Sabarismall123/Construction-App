@@ -1,10 +1,39 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Detect API URL - use production backend URL for deployed frontend
+const getApiBaseUrl = () => {
+  // If VITE_API_URL is set, use it
+  if (import.meta.env.VITE_API_URL) {
+    console.log('📡 Using API URL from env:', import.meta.env.VITE_API_URL);
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // If we're on localhost, use local backend
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log('📡 Using local API URL');
+    return 'http://localhost:5000/api';
+  }
+  
+  // For deployed frontend (Vercel), use production backend (Render)
+  // Replace with your actual Render backend URL
+  const productionApiUrl = 'https://your-backend-url.onrender.com/api';
+  console.log('📡 Using production API URL:', productionApiUrl);
+  return productionApiUrl;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     const user = localStorage.getItem('construction_user');
     const token = user ? 'mock-token' : null; // Use mock token for demo
+    
+    console.log('🌐 API Request:', {
+      method: options.method || 'GET',
+      url,
+      endpoint,
+      baseUrl: API_BASE_URL,
+      hostname: window.location.hostname
+    });
     
     const config: RequestInit = {
       headers: {
@@ -18,13 +47,35 @@ class ApiService {
     try {
       const response = await fetch(url, config);
       
+      console.log('📥 API Response:', {
+        url,
+        status: response.status,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          url,
+          error: errorText
+        });
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
       
-      return await response.json();
-    } catch (error) {
-      console.error('API request failed:', error);
+      const data = await response.json();
+      console.log('✅ API Success:', { url, dataLength: JSON.stringify(data).length });
+      return data;
+    } catch (error: any) {
+      console.error('❌ API request failed:', {
+        url,
+        error: error.message,
+        stack: error.stack,
+        hostname: window.location.hostname,
+        userAgent: navigator.userAgent
+      });
       throw error;
     }
   }
@@ -232,6 +283,122 @@ class ApiService {
 
   async getCommercialEntriesByProject(projectId: string) {
     return this.request(`/commercial/project/${projectId}`);
+  }
+
+  // Inventory endpoints
+  async getInventoryItems() {
+    return this.request('/inventory');
+  }
+
+  async getInventoryItem(id: string) {
+    return this.request(`/inventory/${id}`);
+  }
+
+  async createInventoryItem(item: any) {
+    return this.request('/inventory', {
+      method: 'POST',
+      body: JSON.stringify(item),
+    });
+  }
+
+  async updateInventoryItem(id: string, item: any) {
+    return this.request(`/inventory/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(item),
+    });
+  }
+
+  async deleteInventoryItem(id: string) {
+    return this.request(`/inventory/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Material Issue endpoints
+  async getMaterialIssues() {
+    return this.request('/material-issues');
+  }
+
+  async getMaterialIssue(id: string) {
+    return this.request(`/material-issues/${id}`);
+  }
+
+  async createMaterialIssue(issue: any) {
+    return this.request('/material-issues', {
+      method: 'POST',
+      body: JSON.stringify(issue),
+    });
+  }
+
+  async updateMaterialIssue(id: string, issue: any) {
+    return this.request(`/material-issues/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(issue),
+    });
+  }
+
+  async deleteMaterialIssue(id: string) {
+    return this.request(`/material-issues/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Material Return endpoints
+  async getMaterialReturns() {
+    return this.request('/material-returns');
+  }
+
+  async getMaterialReturn(id: string) {
+    return this.request(`/material-returns/${id}`);
+  }
+
+  async createMaterialReturn(returnItem: any) {
+    return this.request('/material-returns', {
+      method: 'POST',
+      body: JSON.stringify(returnItem),
+    });
+  }
+
+  async updateMaterialReturn(id: string, returnItem: any) {
+    return this.request(`/material-returns/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(returnItem),
+    });
+  }
+
+  async deleteMaterialReturn(id: string) {
+    return this.request(`/material-returns/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Material Consumption endpoints
+  async getMaterialConsumptions() {
+    return this.request('/material-consumptions');
+  }
+
+  async getMaterialConsumption(id: string) {
+    return this.request(`/material-consumptions/${id}`);
+  }
+
+  async createMaterialConsumption(consumption: any) {
+    return this.request('/material-consumptions', {
+      method: 'POST',
+      body: JSON.stringify(consumption),
+    });
+  }
+
+  async updateMaterialConsumption(id: string, consumption: any) {
+    return this.request(`/material-consumptions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(consumption),
+    });
+  }
+
+  async deleteMaterialConsumption(id: string) {
+    return this.request(`/material-consumptions/${id}`, {
+      method: 'DELETE',
+    });
   }
 
   // User endpoints

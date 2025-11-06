@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, UserRole } from '@/types';
 import { ROLES } from '@/constants';
+import { toast } from 'react-hot-toast';
 
 interface UserFormProps {
   user?: User | null;
@@ -21,6 +22,15 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -67,7 +77,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -76,9 +86,11 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
 
     // Check if non-manager is trying to change role
     if (!hasRole(['manager']) && user && formData.role !== user.role) {
-      alert('Only managers can change user roles');
+      toast.error('Only managers can change user roles');
       return;
     }
+
+    setIsSubmitting(true);
 
     const userData = {
       name: formData.name.trim(),
@@ -86,18 +98,38 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
       role: formData.role
     };
 
-    if (user) {
-      // Update existing user
-      updateUser(user.id, userData);
-    } else {
-      // Add new user - include password
-      addUser({
-        ...userData,
-        password: formData.password
+    try {
+      if (user) {
+        // Update existing user
+        await updateUser(user.id, userData);
+        toast.success('User updated successfully');
+      } else {
+        // Add new user - include password
+        await addUser({
+          ...userData,
+          password: formData.password
+        });
+        toast.success('User created successfully');
+      }
+      
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'employee' as UserRole
       });
+      setErrors({});
+      
+      // Close modal after successful submission
+      onClose();
+    } catch (error) {
+      console.error('Failed to save user:', error);
+      toast.error('Failed to save user. Please try again.');
+      // Don't close modal on error so user can fix and retry
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -110,12 +142,21 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
     }
   };
 
+  const handleClose = () => {
+    // Reset body scroll
+    document.body.style.overflow = '';
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
+        <div 
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+          onClick={handleClose}
+        />
         
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-10">
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <div className="sm:flex sm:items-start">
@@ -242,13 +283,15 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
               <button
                 type="submit"
                 className="btn-primary"
+                disabled={isSubmitting}
               >
-                {user ? 'Update User' : 'Add User'}
+                {isSubmitting ? 'Saving...' : (user ? 'Update User' : 'Add User')}
               </button>
               <button
                 type="button"
                 className="btn-secondary mr-3"
-                onClick={onClose}
+                onClick={handleClose}
+                disabled={isSubmitting}
               >
                 Cancel
               </button>

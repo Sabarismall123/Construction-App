@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatDate, formatCurrency, searchItems, filterItems } from '@/utils';
 import { PETTY_CASH_CATEGORIES } from '@/constants';
 import MobileDropdown from '@/components/MobileDropdown';
+import PettyCashForm from '@/components/PettyCashForm';
 
 const PettyCash: React.FC = () => {
   const { pettyCash, projects, deletePettyCash } = useData();
@@ -14,6 +15,8 @@ const PettyCash: React.FC = () => {
   const [projectFilter, setProjectFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
 
   const filteredExpenses = filterItems(
     searchItems(pettyCash, searchTerm, ['paidTo', 'description']),
@@ -80,7 +83,10 @@ const PettyCash: React.FC = () => {
         </div>
         {hasRole(['admin', 'manager', 'site_supervisor']) && (
           <button
-            onClick={() => alert('Add Expense form would open here')}
+            onClick={() => {
+              setEditingExpense(null);
+              setShowForm(true);
+            }}
             className="w-full btn-primary flex items-center justify-center"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -228,7 +234,10 @@ const PettyCash: React.FC = () => {
                         {hasRole(['admin', 'manager', 'site_supervisor']) && (
                           <>
                             <button
-                              onClick={() => alert('Edit Expense form would open here')}
+                              onClick={() => {
+                                setEditingExpense(expense);
+                                setShowForm(true);
+                              }}
                               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                             >
                               <Edit className="h-4 w-4" />
@@ -290,6 +299,17 @@ const PettyCash: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Petty Cash Form Modal */}
+      {showForm && (
+        <PettyCashForm
+          expense={editingExpense}
+          onClose={() => {
+            setShowForm(false);
+            setEditingExpense(null);
+          }}
+        />
+      )}
     </div>
   );
 };
