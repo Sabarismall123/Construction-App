@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, DollarSign, Receipt, Calendar, Building, User } from 'lucide-react';
+import { X, DollarSign, Calendar, User } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { PettyCash } from '@/types';
 import { PETTY_CASH_CATEGORIES } from '@/constants';
@@ -17,7 +17,7 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
     projectId: '',
     amount: '',
     description: '',
-    category: 'other' as PettyCash['category'],
+    category: 'miscellaneous' as PettyCash['category'],
     date: '',
     paidTo: '',
     attachment: ''
@@ -39,7 +39,7 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
         projectId: expense.projectId || '',
         amount: expense.amount.toString(),
         description: expense.description || '',
-        category: expense.category || 'other',
+        category: expense.category || 'miscellaneous',
         date: expense.date ? (typeof expense.date === 'string' ? expense.date : formatDate(new Date(expense.date), 'yyyy-MM-dd')) : formatDate(new Date(), 'yyyy-MM-dd'),
         paidTo: expense.paidTo || '',
         attachment: expense.attachment || ''
@@ -50,7 +50,7 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
         projectId: '',
         amount: '',
         description: '',
-        category: 'other',
+        category: 'miscellaneous',
         date: formatDate(new Date(), 'yyyy-MM-dd'),
         paidTo: '',
         attachment: ''
@@ -118,7 +118,7 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
         projectId: '',
         amount: '',
         description: '',
-        category: 'other',
+        category: 'miscellaneous',
         date: formatDate(new Date(), 'yyyy-MM-dd'),
         paidTo: '',
         attachment: ''
@@ -153,47 +153,36 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div 
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
-          onClick={handleClose}
-        />
-        
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full relative z-10">
-          <form onSubmit={handleSubmit}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {expense ? 'Edit Expense' : 'Add New Expense'}
-              </h3>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="text-gray-400 hover:text-gray-600"
-                disabled={isSubmitting}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+    <div className="modal-overlay">
+      <div className="modal max-w-2xl">
+        <div className="modal-header flex items-center justify-between">
+          <h2 className="modal-title">
+            {expense ? 'Edit Expense' : 'Add New Expense'}
+          </h2>
+          <button
+            onClick={handleClose}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg flex-shrink-0 ml-4"
+            disabled={isSubmitting}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-            {/* Form Body */}
-            <div className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            <div className="space-y-1 lg:space-y-4">
               {/* Project */}
               <div>
-                <label htmlFor="projectId" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="projectId" className="label">
                   Project *
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building className="h-5 w-5 text-gray-400" />
-                  </div>
                   <select
                     name="projectId"
                     id="projectId"
                     value={formData.projectId}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none ${errors.projectId ? 'border-red-300' : ''}`}
+                    className={`input appearance-none pr-10 ${errors.projectId ? 'input-error' : ''}`}
                   >
                     <option value="">Select project</option>
                     {projects.map((project) => (
@@ -209,13 +198,13 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
                   </div>
                 </div>
                 {errors.projectId && (
-                  <p className="mt-1 text-sm text-red-600">{errors.projectId}</p>
+                  <p className="form-error">{errors.projectId}</p>
                 )}
               </div>
 
               {/* Amount */}
               <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="amount" className="label">
                   Amount *
                 </label>
                 <div className="relative">
@@ -230,18 +219,18 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
                     onChange={handleChange}
                     step="0.01"
                     min="0.01"
-                    className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.amount ? 'border-red-300' : ''}`}
+                    className={`input pl-10 ${errors.amount ? 'input-error' : ''}`}
                     placeholder="0.00"
                   />
                 </div>
                 {errors.amount && (
-                  <p className="mt-1 text-sm text-red-600">{errors.amount}</p>
+                  <p className="form-error">{errors.amount}</p>
                 )}
               </div>
 
               {/* Description */}
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="description" className="label">
                   Description *
                 </label>
                 <textarea
@@ -250,29 +239,26 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
                   value={formData.description}
                   onChange={handleChange}
                   rows={3}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.description ? 'border-red-300' : ''}`}
+                  className={`input resize-none ${errors.description ? 'input-error' : ''}`}
                   placeholder="Enter expense description"
                 />
                 {errors.description && (
-                  <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                  <p className="form-error">{errors.description}</p>
                 )}
               </div>
 
               {/* Category */}
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="category" className="label">
                   Category
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Receipt className="h-5 w-5 text-gray-400" />
-                  </div>
                   <select
                     name="category"
                     id="category"
                     value={formData.category}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                    className="input appearance-none pr-10"
                   >
                     {PETTY_CASH_CATEGORIES.map((category) => (
                       <option key={category.value} value={category.value}>
@@ -290,7 +276,7 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
 
               {/* Date */}
               <div>
-                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="date" className="label">
                   Date *
                 </label>
                 <div className="relative">
@@ -303,17 +289,17 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
                     id="date"
                     value={formData.date}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.date ? 'border-red-300' : ''}`}
+                    className={`input pl-10 ${errors.date ? 'input-error' : ''}`}
                   />
                 </div>
                 {errors.date && (
-                  <p className="mt-1 text-sm text-red-600">{errors.date}</p>
+                  <p className="form-error">{errors.date}</p>
                 )}
               </div>
 
               {/* Paid To */}
               <div>
-                <label htmlFor="paidTo" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="paidTo" className="label">
                   Paid To
                 </label>
                 <div className="relative">
@@ -326,7 +312,7 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
                     id="paidTo"
                     value={formData.paidTo}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="input pl-10"
                     placeholder="Enter recipient name"
                   />
                 </div>
@@ -334,7 +320,7 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
 
               {/* Attachment URL */}
               <div>
-                <label htmlFor="attachment" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="attachment" className="label">
                   Receipt/Attachment URL (Optional)
                 </label>
                 <input
@@ -343,24 +329,38 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
                   id="attachment"
                   value={formData.attachment}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                   placeholder="https://example.com/receipt.jpg"
                 />
               </div>
             </div>
+          </div>
 
-            {/* Footer */}
-            <div className="flex justify-end px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Saving...' : (expense ? 'UPDATE EXPENSE' : 'CREATE EXPENSE')}
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="modal-footer flex-row justify-between space-x-2">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="btn-secondary flex-1"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary flex-1"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="loading-spinner h-4 w-4 mr-2"></div>
+                  {expense ? 'Updating...' : 'Creating...'}
+                </div>
+              ) : (
+                expense ? 'Update Expense' : 'Create Expense'
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

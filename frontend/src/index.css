@@ -38,6 +38,7 @@
 }
 
 /* Desktop/Web-only fixes: keep mobile untouched */
+/* IMPORTANT: All desktop fixes are scoped to min-width: 1024px to NOT affect mobile */
 @media (min-width: 1024px) {
   /* Remove mobile height constraints on desktop to avoid cramped layouts */
   html, body, #root {
@@ -52,12 +53,21 @@
     overflow-y: visible !important;
   }
 
-  /* Action buttons should not be full width on desktop */
-  .btn,
-  button.btn,
-  a.btn {
+  /* Action buttons should not be full width on desktop - EXCEPT in forms and login pages */
+  .btn:not(form .btn):not(.w-full):not([class*="login"] .btn),
+  button.btn:not(form button):not(.w-full):not([class*="login"] button),
+  a.btn:not(form a):not(.w-full):not([class*="login"] a) {
     width: auto !important;
     display: inline-flex !important;
+  }
+
+  /* ALWAYS keep full width for form buttons and inputs (works on both mobile and desktop) */
+  form .btn.w-full,
+  form button.w-full,
+  form input.w-full,
+  form select.w-full,
+  form textarea.w-full {
+    width: 100% !important;
   }
 
   /* Common desktop paddings for content cards */
@@ -65,17 +75,55 @@
     padding: 1.25rem 1.5rem !important; /* 20px 24px */
   }
 
-  /* Inputs/selects default to content width on desktop */
-  input.w-full,
-  select.w-full,
-  textarea.w-full {
+  /* Inputs/selects default to content width on desktop - EXCEPT in forms */
+  input.w-full:not(form input),
+  select.w-full:not(form select),
+  textarea.w-full:not(form textarea) {
     width: auto !important;
   }
 
-  /* Prevent mobile spacing utilities from stacking excessively on desktop */
-  .space-y-4 > * + * { margin-top: 0 !important; }
-  .space-y-3 > * + * { margin-top: 0 !important; }
-  .space-y-2 > * + * { margin-top: 0 !important; }
+  /* Keep proper spacing for forms and login pages */
+  form .space-y-6 > * + *,
+  form .space-y-4 > * + *,
+  form .space-y-3 > * + *,
+  form .space-y-2 > * + * {
+    margin-top: inherit !important;
+  }
+
+  /* Login page specific desktop fixes - ensure proper alignment */
+  form input[type="email"],
+  form input[type="password"],
+  form input[type="text"] {
+    width: 100% !important;
+  }
+
+  form button[type="submit"] {
+    width: 100% !important;
+  }
+  
+  /* Eye icon alignment on desktop - position at right corner */
+  form .relative input[type="password"] + button,
+  form .relative input[type="text"][name="password"] + button {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    right: 0.5rem !important;
+    width: 2rem !important;
+    height: 2rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: 10 !important;
+  }
+  
+  /* Ensure eye icon SVG is centered on desktop */
+  form .relative input[type="password"] + button svg,
+  form .relative input[type="text"][name="password"] + button svg {
+    display: block !important;
+    margin: 0 !important;
+  }
 }
 
 @layer components {
@@ -278,7 +326,7 @@
   }
   
   .modal-header {
-    @apply px-6 py-4 border-b border-gray-200;
+    @apply px-6 py-4 border-b border-gray-200 flex items-center justify-between;
   }
   
   .modal-title {
@@ -287,10 +335,87 @@
   
   .modal-body {
     @apply px-6 py-4;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
   }
   
   .modal-footer {
     @apply px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3;
+  }
+  
+  /* Mobile-specific modal fixes */
+  @media (max-width: 1023px) {
+    .modal-overlay {
+      padding: 0.5rem;
+      padding-bottom: 6rem; /* Space for bottom navigation (z-30) */
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 50;
+    }
+    
+    .modal {
+      max-height: calc(100vh - 7rem);
+      max-height: calc(100dvh - 7rem);
+      max-height: calc(100svh - 7rem);
+      height: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin: 0 auto;
+      margin-bottom: 1rem;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .modal-header {
+      flex-shrink: 0;
+      padding: 0.75rem 1rem;
+    }
+    
+    .modal-body {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: 0.75rem 1rem;
+      padding-bottom: 0.5rem;
+      min-height: 0;
+      max-height: calc(100vh - 16rem);
+      max-height: calc(100dvh - 16rem);
+      max-height: calc(100svh - 16rem);
+    }
+    
+    .modal-footer {
+      flex-shrink: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 0.75rem 1rem;
+      padding-bottom: 0.75rem;
+      margin-bottom: 0;
+      display: flex;
+      flex-direction: row;
+      gap: 0.5rem;
+      z-index: 10;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+      position: relative;
+      width: 100%;
+      min-height: 3.5rem;
+    }
+    
+    .modal-footer button {
+      flex: 1;
+      margin: 0 !important;
+      min-width: 0;
+    }
   }
   
   .form-group {
@@ -299,6 +424,90 @@
   
   .form-row {
     @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+  }
+  
+  /* Mobile-specific form spacing */
+  @media (max-width: 1023px) {
+    .form-group {
+      margin-bottom: 0.25rem !important;
+    }
+    
+    .form-row {
+      gap: 0.5rem !important;
+      margin-bottom: 0.25rem !important;
+    }
+    
+    .form-row .form-group {
+      margin-bottom: 0.25rem !important;
+    }
+    
+    .modal-body .space-y-2 > * + * {
+      margin-top: 0.25rem !important;
+    }
+    
+    .modal-body .space-y-3 > * + * {
+      margin-top: 0.25rem !important;
+    }
+    
+    .modal-body .space-y-4 > * + * {
+      margin-top: 0.25rem !important;
+    }
+    
+    /* Drastically reduce gaps between form rows */
+    .modal-body .form-row + .form-row {
+      margin-top: 0.25rem !important;
+    }
+    
+    .modal-body .form-group + .form-group {
+      margin-top: 0.25rem !important;
+    }
+    
+    /* Reduce label spacing */
+    .modal-body .label {
+      margin-bottom: 0.125rem !important;
+    }
+    
+    /* Reduce input spacing */
+    .modal-body .input,
+    .modal-body select {
+      margin-bottom: 0 !important;
+    }
+    
+    /* Ensure description field is visible and properly sized */
+    .modal-body textarea {
+      min-height: 60px !important;
+      max-height: 100px !important;
+      display: block !important;
+      visibility: visible !important;
+      width: 100% !important;
+      margin-bottom: 0.5rem !important;
+    }
+    
+    /* Ensure description field is above footer */
+    .modal-body .form-group:last-child {
+      margin-bottom: 1rem !important;
+      padding-bottom: 0.5rem !important;
+    }
+    
+    /* Reduce label margin on mobile */
+    .form-group .label,
+    label {
+      margin-bottom: 0.25rem !important;
+    }
+    
+    /* Fix mobile number field alignment */
+    .flex.items-stretch > div:first-child {
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      min-height: 2.5rem !important;
+    }
+    
+    /* Ensure all inputs have consistent height */
+    .input {
+      min-height: 2.5rem !important;
+      height: 2.5rem !important;
+    }
   }
   
   .form-error {
@@ -364,8 +573,9 @@
     display: none;
   }
   
-  /* Mobile-specific optimizations */
-  @media (max-width: 768px) {
+  /* Mobile-specific optimizations - CRITICAL: These styles MUST work on mobile */
+  @media (max-width: 1023px) {
+    /* Ensure mobile viewport constraints */
     .mobile-optimized {
       height: calc(100vh - 120px);
       overflow: hidden;
@@ -383,7 +593,7 @@
       @apply grid grid-cols-2 gap-3;
     }
     
-    /* Prevent horizontal overflow */
+    /* Prevent horizontal overflow on mobile */
     * {
       max-width: 100% !important;
       box-sizing: border-box !important;
@@ -404,23 +614,81 @@
       white-space: nowrap !important;
     }
     
-    /* Force all containers to respect width */
+    /* Force all containers to respect width on mobile */
     div {
       max-width: 100% !important;
     }
     
-    /* Grid specific fixes */
+    /* Grid specific fixes for mobile */
     .grid-cols-1 {
       grid-template-columns: 1fr !important;
       gap: 1rem !important;
       width: 100% !important;
     }
     
-    /* Button fixes */
-    .btn {
+    /* Button fixes - ALWAYS full width on mobile */
+    .btn,
+    button.btn,
+    a.btn {
       width: 100% !important;
       max-width: 100% !important;
       justify-content: center !important;
+    }
+    
+    /* Form inputs ALWAYS full width on mobile */
+    form input,
+    form select,
+    form textarea,
+    form button {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
+    /* Login page - ensure full width on mobile */
+    form .input,
+    form .btn-primary {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
+    /* Fix eye icon alignment in password field on mobile - MUST be at right edge */
+    form .relative input[type="password"] + button,
+    form .relative input[type="text"][name="password"] + button {
+      position: absolute !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      right: 0.75rem !important;
+      width: 2rem !important;
+      height: 2rem !important;
+      min-width: 2rem !important;
+      min-height: 2rem !important;
+      max-width: 2rem !important;
+      max-height: 2rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      z-index: 10 !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      box-sizing: border-box !important;
+    }
+    
+    /* Ensure input padding doesn't interfere with icon on mobile */
+    form .relative input[type="password"],
+    form .relative input[type="text"][name="password"] {
+      padding-right: 2.5rem !important;
+    }
+    
+    /* Ensure eye icon SVG is properly centered on mobile */
+    form .relative input[type="password"] + button svg,
+    form .relative input[type="text"][name="password"] + button svg {
+      display: block !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
     }
     
     /* Icon container fixes */
@@ -618,9 +886,8 @@
     min-height: calc(100vh - 120px) !important;
     min-height: calc(100dvh - 120px) !important;
     min-height: calc(100svh - 120px) !important;
-    max-height: calc(100vh - 120px) !important;
-    max-height: calc(100dvh - 120px) !important;
-    max-height: calc(100svh - 120px) !important;
+    /* Remove max-height to allow content to scroll properly */
+    max-height: none !important;
   }
 
   /* Fixed position dropdowns should stay within viewport */

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, FileText, BarChart3, TrendingUp, Calendar, Filter } from 'lucide-react';
+import { Download, FileText, BarChart3, TrendingUp, Calendar } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate, formatCurrency } from '@/utils';
@@ -49,9 +49,9 @@ const Reports: React.FC = () => {
   return (
     <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-gray-900">Reports</h1>
           <p className="mt-1 text-sm text-gray-500">
             Generate and export comprehensive reports for all modules
           </p>
@@ -59,57 +59,59 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Report Configuration */}
-      <div className="card-body p-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Report Configuration</h3>
-        <div className="flex flex-col space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Module</label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={selectedModule}
-              onChange={(e) => setSelectedModule(e.target.value)}
-            >
-              {reportModules.map((module) => (
-                <option key={module.key} value={module.key}>
-                  {module.icon} {module.label}
-                </option>
-              ))}
-            </select>
+      <div className="card">
+        <div className="card-body p-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Report Configuration</h3>
+          <div className="flex flex-col space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Module</label>
+              <select
+                className="input w-full"
+                value={selectedModule}
+                onChange={(e) => setSelectedModule(e.target.value)}
+              >
+                {reportModules.map((module) => (
+                  <option key={module.key} value={module.key}>
+                    {module.icon} {module.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
+              <select
+                className="input w-full"
+                value={reportFormat}
+                onChange={(e) => setReportFormat(e.target.value)}
+              >
+                <option value="pdf">PDF</option>
+                <option value="excel">Excel</option>
+                <option value="csv">CSV</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+              <input
+                type="date"
+                className="input w-full"
+                value={dateRange.from}
+                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+              <input
+                type="date"
+                className="input w-full"
+                value={dateRange.to}
+                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={dateRange.from}
-              onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={dateRange.to}
-              onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={reportFormat}
-              onChange={(e) => setReportFormat(e.target.value)}
-            >
-              <option value="pdf">PDF</option>
-              <option value="excel">Excel</option>
-              <option value="csv">CSV</option>
-            </select>
-          </div>
-          <div className="mt-4">
+          <div className="mt-4 lg:mt-6">
             <button
               onClick={handleGenerateReport}
-              className="w-full btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center"
             >
               <Download className="h-4 w-4 mr-2" />
               Generate Report
@@ -119,7 +121,7 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
@@ -182,7 +184,7 @@ const Reports: React.FC = () => {
             <p className="text-sm text-gray-500 mb-4">
               Comprehensive overview of all projects including progress, budget, and timeline.
             </p>
-            <button className="w-full btn-secondary flex items-center justify-center">
+            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center">
               <Download className="h-4 w-4 mr-2" />
               Generate Report
             </button>
@@ -200,7 +202,7 @@ const Reports: React.FC = () => {
             <p className="text-sm text-gray-500 mb-4">
               Detailed financial analysis including expenses, budget utilization, and cost trends.
             </p>
-            <button className="w-full btn-secondary flex items-center justify-center">
+            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center">
               <Download className="h-4 w-4 mr-2" />
               Generate Report
             </button>
@@ -218,7 +220,7 @@ const Reports: React.FC = () => {
             <p className="text-sm text-gray-500 mb-4">
               Employee attendance summary with working hours, overtime, and attendance rates.
             </p>
-            <button className="w-full btn-secondary flex items-center justify-center">
+            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center">
               <Download className="h-4 w-4 mr-2" />
               Generate Report
             </button>
@@ -227,8 +229,9 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Recent Reports */}
-      <div className="card-body p-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Reports</h3>
+      <div className="card">
+        <div className="card-body p-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Reports</h3>
         <div className="space-y-3">
           {[
             { name: 'Project Summary - Q1 2024', date: '2024-01-15', format: 'PDF', size: '2.3 MB' },
@@ -249,6 +252,7 @@ const Reports: React.FC = () => {
               </button>
             </div>
           ))}
+        </div>
         </div>
       </div>
     </div>

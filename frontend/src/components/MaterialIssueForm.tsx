@@ -151,44 +151,35 @@ const MaterialIssueForm: React.FC<MaterialIssueFormProps> = ({ issue, onClose })
   const projectTasks = formData.projectId ? tasks.filter(t => t.projectId === formData.projectId) : [];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div 
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
-          onClick={handleClose}
-        />
-        
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full relative z-10">
-          <form onSubmit={handleSubmit}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {issue ? 'Edit Material Issue' : 'Issue Material'}
-              </h3>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="text-gray-400 hover:text-gray-600"
-                disabled={isSubmitting}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+    <div className="modal-overlay">
+      <div className="modal max-w-2xl">
+        <div className="modal-header flex items-center justify-between">
+          <h2 className="modal-title">
+            {issue ? 'Edit Material Issue' : 'Issue Material'}
+          </h2>
+          <button
+            onClick={handleClose}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg flex-shrink-0 ml-4"
+            disabled={isSubmitting}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-            <div className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            <div className="space-y-1 lg:space-y-4">
               <div>
-                <label htmlFor="projectId" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="projectId" className="label">
                   Project *
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building className="h-5 w-5 text-gray-400" />
-                  </div>
                   <select
                     name="projectId"
                     id="projectId"
                     value={formData.projectId}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none ${errors.projectId ? 'border-red-300' : ''}`}
+                    className={`input appearance-none pr-10 ${errors.projectId ? 'input-error' : ''}`}
                   >
                     <option value="">Select project</option>
                     {projects.map((project) => (
@@ -197,25 +188,27 @@ const MaterialIssueForm: React.FC<MaterialIssueFormProps> = ({ issue, onClose })
                       </option>
                     ))}
                   </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
-                {errors.projectId && <p className="mt-1 text-sm text-red-600">{errors.projectId}</p>}
+                {errors.projectId && <p className="form-error">{errors.projectId}</p>}
               </div>
 
               {projectTasks.length > 0 && (
                 <div>
-                  <label htmlFor="taskId" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="taskId" className="label">
                     Task (Optional)
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Clipboard className="h-5 w-5 text-gray-400" />
-                    </div>
                     <select
                       name="taskId"
                       id="taskId"
                       value={formData.taskId}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                      className="input appearance-none pr-10"
                     >
                       <option value="">Select task</option>
                       {projectTasks.map((task) => (
@@ -224,24 +217,26 @@ const MaterialIssueForm: React.FC<MaterialIssueFormProps> = ({ issue, onClose })
                         </option>
                       ))}
                     </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               )}
 
               <div>
-                <label htmlFor="materialId" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="materialId" className="label">
                   Material *
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Package className="h-5 w-5 text-gray-400" />
-                  </div>
                   <select
                     name="materialId"
                     id="materialId"
                     value={formData.materialId}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none ${errors.materialId ? 'border-red-300' : ''}`}
+                    className={`input appearance-none pr-10 ${errors.materialId ? 'input-error' : ''}`}
                   >
                     <option value="">Select material</option>
                     {inventory.map((item) => (
@@ -250,12 +245,17 @@ const MaterialIssueForm: React.FC<MaterialIssueFormProps> = ({ issue, onClose })
                       </option>
                     ))}
                   </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
-                {errors.materialId && <p className="mt-1 text-sm text-red-600">{errors.materialId}</p>}
+                {errors.materialId && <p className="form-error">{errors.materialId}</p>}
               </div>
 
               <div>
-                <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="quantity" className="label">
                   Quantity *
                 </label>
                 <input
@@ -266,14 +266,14 @@ const MaterialIssueForm: React.FC<MaterialIssueFormProps> = ({ issue, onClose })
                   onChange={handleChange}
                   min="0.01"
                   step="0.01"
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.quantity ? 'border-red-300' : ''}`}
+                  className={errors.quantity ? 'input-error' : 'input'}
                   placeholder="0.00"
                 />
-                {errors.quantity && <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>}
+                {errors.quantity && <p className="form-error">{errors.quantity}</p>}
               </div>
 
               <div>
-                <label htmlFor="issuedDate" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="issuedDate" className="label">
                   Issue Date *
                 </label>
                 <div className="relative">
@@ -286,14 +286,14 @@ const MaterialIssueForm: React.FC<MaterialIssueFormProps> = ({ issue, onClose })
                     id="issuedDate"
                     value={formData.issuedDate}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.issuedDate ? 'border-red-300' : ''}`}
+                    className={`input pl-10 ${errors.issuedDate ? 'input-error' : ''}`}
                   />
                 </div>
-                {errors.issuedDate && <p className="mt-1 text-sm text-red-600">{errors.issuedDate}</p>}
+                {errors.issuedDate && <p className="form-error">{errors.issuedDate}</p>}
               </div>
 
               <div>
-                <label htmlFor="issuedBy" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="issuedBy" className="label">
                   Issued By
                 </label>
                 <div className="relative">
@@ -306,14 +306,14 @@ const MaterialIssueForm: React.FC<MaterialIssueFormProps> = ({ issue, onClose })
                     id="issuedBy"
                     value={formData.issuedBy}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="input pl-10"
                     placeholder="Enter issuer name"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="issuedTo" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="issuedTo" className="label">
                   Issued To *
                 </label>
                 <div className="relative">
@@ -326,15 +326,15 @@ const MaterialIssueForm: React.FC<MaterialIssueFormProps> = ({ issue, onClose })
                     id="issuedTo"
                     value={formData.issuedTo}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.issuedTo ? 'border-red-300' : ''}`}
+                    className={`input pl-10 ${errors.issuedTo ? 'input-error' : ''}`}
                     placeholder="Enter recipient name"
                   />
                 </div>
-                {errors.issuedTo && <p className="mt-1 text-sm text-red-600">{errors.issuedTo}</p>}
+                {errors.issuedTo && <p className="form-error">{errors.issuedTo}</p>}
               </div>
 
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="notes" className="label">
                   Notes
                 </label>
                 <textarea
@@ -343,23 +343,38 @@ const MaterialIssueForm: React.FC<MaterialIssueFormProps> = ({ issue, onClose })
                   value={formData.notes}
                   onChange={handleChange}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="input resize-none"
                   placeholder="Enter any additional notes"
                 />
               </div>
             </div>
+          </div>
 
-            <div className="flex justify-end px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Saving...' : (issue ? 'UPDATE ISSUE' : 'ISSUE MATERIAL')}
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="modal-footer flex-row justify-between space-x-2">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="btn-secondary flex-1"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary flex-1"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="loading-spinner h-4 w-4 mr-2"></div>
+                  {issue ? 'Updating...' : 'Creating...'}
+                </div>
+              ) : (
+                issue ? 'Update Issue' : 'Issue Material'
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

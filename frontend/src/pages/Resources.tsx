@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Eye, Package, Users, Wrench } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, searchItems, filterItems } from '@/utils';
 import { RESOURCE_TYPES, RESOURCE_STATUSES } from '@/constants';
 import MobileDropdown from '@/components/MobileDropdown';
+import ResourceForm from '@/components/ResourceForm';
+import { Resource } from '@/types';
 
 const Resources: React.FC = () => {
   const { resources, projects, deleteResource } = useData();
@@ -13,7 +15,7 @@ const Resources: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [editingResource, setEditingResource] = useState<any>(null);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
 
   const filteredResources = filterItems(
     searchItems(resources, searchTerm, ['name']),
@@ -42,8 +44,8 @@ const Resources: React.FC = () => {
   return (
     <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col space-y-4">
-        <div>
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="min-w-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Resources</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Manage labor, materials, and equipment resources
@@ -51,8 +53,11 @@ const Resources: React.FC = () => {
         </div>
         {hasRole(['admin', 'manager', 'site_supervisor']) && (
           <button
-            onClick={() => setShowForm(true)}
-            className="w-full btn-primary flex items-center justify-center"
+            onClick={() => {
+              setEditingResource(null);
+              setShowForm(true);
+            }}
+            className="w-full lg:w-auto btn-primary flex items-center justify-center"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Resource
@@ -63,8 +68,8 @@ const Resources: React.FC = () => {
       {/* Filters */}
       <div className="card">
         <div className="card-body p-4">
-          <div className="flex flex-col space-y-3">
-            <div className="relative">
+          <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
+            <div className="relative flex-1 lg:max-w-md">
               <div className="search-icon">
                 <Search className="h-5 w-5" />
               </div>
@@ -76,7 +81,7 @@ const Resources: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div>
+            <div className="lg:w-auto lg:min-w-[180px]">
               <MobileDropdown
                 options={[
                   { value: '', label: 'All Types' },
@@ -90,7 +95,7 @@ const Resources: React.FC = () => {
                 placeholder="All Types"
               />
             </div>
-            <div>
+            <div className="lg:w-auto lg:min-w-[180px]">
               <MobileDropdown
                 options={[
                   { value: '', label: 'All Statuses' },
@@ -127,7 +132,10 @@ const Resources: React.FC = () => {
                   {hasRole(['admin', 'manager', 'site_supervisor']) && (
                     <>
                       <button
-                        onClick={() => setEditingResource(resource)}
+                        onClick={() => {
+                          setEditingResource(resource);
+                          setShowForm(true);
+                        }}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                       >
                         <Edit className="h-4 w-4" />
@@ -206,6 +214,17 @@ const Resources: React.FC = () => {
               : 'Get started by adding your first resource.'}
           </p>
         </div>
+      )}
+
+      {/* Resource Form Modal */}
+      {showForm && (
+        <ResourceForm
+          resource={editingResource}
+          onClose={() => {
+            setShowForm(false);
+            setEditingResource(null);
+          }}
+        />
       )}
     </div>
   );

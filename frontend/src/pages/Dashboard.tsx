@@ -85,7 +85,7 @@ const Dashboard: React.FC = () => {
   );
 
   return (
-    <div className="mobile-content w-full px-4 py-4 space-y-6 min-h-full">
+    <div className="mobile-content w-full px-4 py-4 space-y-6 min-h-full pb-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">
@@ -190,8 +190,8 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 w-full">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Project Progress</h3>
           <div className="h-64 flex items-center justify-center text-gray-500">
             <div className="text-center">
@@ -200,7 +200,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 w-full">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Task Status</h3>
           <div className="h-64 flex items-center justify-center text-gray-500">
             <div className="text-center">

@@ -144,122 +144,126 @@ const Attendance: React.FC = () => {
   return (
     <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-          <p className="mt-1 text-sm text-gray-500">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Attendance</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Track employee attendance and working hours
           </p>
         </div>
-        <div className="flex flex-col space-y-2">
-          {hasRole(['admin', 'manager', 'site_supervisor']) && (
-            <>
-              <button
-                onClick={handleBulkUpload}
-                className="w-full btn-secondary flex items-center justify-center"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Bulk Upload
-              </button>
-              <button
-                onClick={handleExport}
-                className="w-full btn-secondary flex items-center justify-center"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </button>
-              <button
-                onClick={() => setShowForm(true)}
-                className="w-full btn-primary flex items-center justify-center"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Labour
-              </button>
-            </>
-          )}
-        </div>
+        {hasRole(['admin', 'manager', 'site_supervisor']) && (
+          <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-2">
+            <button
+              onClick={handleBulkUpload}
+              className="w-full lg:w-auto btn-secondary flex items-center justify-center text-sm lg:px-3 lg:py-2"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Bulk Upload
+            </button>
+            <button
+              onClick={handleExport}
+              className="w-full lg:w-auto btn-secondary flex items-center justify-center text-sm lg:px-3 lg:py-2"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </button>
+            <button
+              onClick={() => setShowForm(true)}
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-sm lg:px-3 lg:py-2"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Labour
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
-      <div className="card-body p-4">
-        <div className="flex flex-col space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+      <div className="card">
+        <div className="card-body p-4">
+          <div className="flex flex-col space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <div className="search-icon">
+                <Search className="h-5 w-5" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search employees..."
+                className="search-input"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Search employees..."
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
 
-          {/* Filters Row */}
-          <div className="flex flex-col space-y-3">
-            <MobileDropdown
-              options={statusOptions}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              placeholder="All Statuses"
-              className="w-full"
-            />
-            <MobileDropdown
-              options={projectOptions}
-              value={projectFilter}
-              onChange={setProjectFilter}
-              placeholder="All Projects"
-              className="w-full"
-            />
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              placeholder="Filter by date"
-            />
-          </div>
-
-          {/* Debug Info and Clear Filters */}
-          <div className="flex flex-col space-y-2">
-            <div className="text-sm text-gray-600">
-              Showing {filteredAttendance.length} of {attendance.length} attendance records
+            {/* Filters Row */}
+            <div className="flex flex-col space-y-3 lg:flex-row lg:space-y-0 lg:space-x-3">
+              <div className="flex-1">
+                <MobileDropdown
+                  options={statusOptions}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  placeholder="All Statuses"
+                  className="w-full"
+                />
+              </div>
+              <div className="flex-1">
+                <MobileDropdown
+                  options={projectOptions}
+                  value={projectFilter}
+                  onChange={setProjectFilter}
+                  placeholder="All Projects"
+                  className="w-full"
+                />
+              </div>
+              <div className="flex-1">
+                <input
+                  type="date"
+                  className="input w-full"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  placeholder="Filter by date"
+                />
+              </div>
             </div>
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className="w-full btn-secondary flex items-center justify-center"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Clear all filters
-              </button>
-            )}
+
+            {/* Debug Info and Clear Filters */}
+            <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+              <div className="text-sm text-gray-600">
+                Showing {filteredAttendance.length} of {attendance.length} attendance records
+              </div>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="w-full lg:w-auto btn-secondary flex items-center justify-center"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear all filters
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Attendance List */}
-      <div className="card-body p-4">
-        <div className="flex flex-col space-y-3">
-          {filteredAttendance.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Clock className="h-6 w-6 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No attendance records found</h3>
-              <p className="text-sm text-gray-500">
-                {searchTerm || statusFilter || projectFilter || dateFilter
-                  ? 'Try adjusting your search or filter criteria.'
-                  : 'Get started by adding attendance records.'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredAttendance.map((record) => (
-                <div key={record.id} className="card hover:shadow-md transition-shadow">
-                  <div className="card-body p-4">
+      {filteredAttendance.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Clock className="h-12 w-12" />
+          </div>
+          <h3 className="empty-state-title">No attendance records found</h3>
+          <p className="empty-state-description">
+            {searchTerm || statusFilter || projectFilter || dateFilter
+              ? 'Try adjusting your search or filter criteria.'
+              : 'Get started by adding attendance records.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredAttendance.map((record) => (
+            <div key={record.id} className="card hover:shadow-md transition-shadow">
+              <div className="card-body p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center flex-1 min-w-0">
                         <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
@@ -366,8 +370,6 @@ const Attendance: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
-      </div>
 
       {/* Create Labour Form Modal */}
       {showForm && (

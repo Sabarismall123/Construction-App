@@ -52,8 +52,8 @@ const LoginPage: React.FC = () => {
 
         <div className="bg-white py-8 px-6 shadow-lg rounded-lg">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="label">
+            <div className="w-full">
+              <label htmlFor="email" className="label block text-left">
                 Email address
               </label>
               <input
@@ -62,48 +62,50 @@ const LoginPage: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="input"
+                className="input w-full"
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="label">
+            <div className="w-full">
+              <label htmlFor="password" className="label block text-left">
                 Password
               </label>
-              <div className="relative">
+              <div className="relative w-full">
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  className="input pr-10"
+                  className="input w-full"
+                  style={{ paddingRight: '2.5rem' }}
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute top-1/2 -translate-y-1/2 right-2 flex items-center justify-center z-10 touch-manipulation w-8 h-8"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label="Toggle password visibility"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="h-5 w-5 text-gray-400 flex-shrink-0" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="h-5 w-5 text-gray-400 flex-shrink-0" />
                   )}
                 </button>
               </div>
             </div>
 
-            <div>
+            <div className="w-full">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn-primary w-full btn-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary w-full btn-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -117,7 +119,7 @@ const LoginPage: React.FC = () => {
             </div>
           </form>
 
-          <div className="mt-8">
+          <div className="mt-8 w-full">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
@@ -127,25 +129,25 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 space-y-3 w-full">
               {demoCredentials.map((cred, index) => (
                 <div
                   key={index}
-                  className="bg-gray-50 p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                  className="bg-gray-50 p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors w-full"
                   onClick={() => {
                     setEmail(cred.email);
                     setPassword(cred.password);
                   }}
                 >
-                  <div className="text-sm font-medium text-gray-900">{cred.role}</div>
-                  <div className="text-xs text-gray-500">{cred.email}</div>
+                  <div className="text-sm font-medium text-gray-900 text-left">{cred.role}</div>
+                  <div className="text-xs text-gray-500 text-left">{cred.email}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="text-center">
+        <div className="text-center w-full">
           <p className="text-xs text-gray-500">
             Click on any demo account to auto-fill credentials
           </p>

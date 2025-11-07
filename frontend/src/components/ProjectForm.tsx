@@ -135,13 +135,13 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
   return (
     <div className="modal-overlay">
       <div className="modal max-w-2xl">
-        <div className="modal-header">
+        <div className="modal-header flex items-center justify-between">
           <h2 className="modal-title">
             {project ? 'Edit Project' : 'Add New Project'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg flex-shrink-0 ml-4"
           >
             <X className="h-5 w-5" />
           </button>
@@ -149,7 +149,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            <div className="space-y-6">
+            <div className="space-y-1 lg:space-y-4">
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="name" className="label">
@@ -262,8 +262,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
                 <textarea
                   id="description"
                   name="description"
-                  rows={4}
-                  className={errors.description ? 'input-error' : 'input'}
+                  rows={3}
+                  className={`input resize-none w-full ${errors.description ? 'input-error' : ''}`}
                   value={formData.description}
                   onChange={handleChange}
                   placeholder="Enter project description"
@@ -273,22 +273,22 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ project, onClose }) => {
             </div>
           </div>
 
-          <div className="modal-footer">
+          <div className="modal-footer flex-row justify-between space-x-2">
             <button
               type="button"
               onClick={onClose}
-              className="btn-secondary"
+              className="btn-secondary flex-1"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="btn-primary"
+              className="btn-primary flex-1"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <div className="flex items-center">
+                <div className="flex items-center justify-center">
                   <div className="loading-spinner h-4 w-4 mr-2"></div>
                   {project ? 'Updating...' : 'Creating...'}
                 </div>

@@ -157,32 +157,24 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div 
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
-          onClick={handleClose}
-        />
+    <div className="modal-overlay">
+      <div className="modal max-w-lg">
+        <div className="modal-header flex items-center justify-between">
+          <h2 className="modal-title">
+            {attendance ? 'Edit Labour' : 'Add New Labour'}
+          </h2>
+          <button
+            onClick={handleClose}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg flex-shrink-0 ml-4"
+            disabled={isSubmitting}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
         
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full relative z-10">
-          <form onSubmit={handleSubmit}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {attendance ? 'Edit Labour' : 'Add New Labour'}
-              </h3>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="text-gray-400 hover:text-gray-600"
-                disabled={isSubmitting}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Form Body */}
-            <div className="px-6 py-4 space-y-4">
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            <div className="space-y-3 lg:space-y-4">
               {/* Labour Name */}
               <div>
                 <label htmlFor="labourName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -194,7 +186,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                   id="labourName"
                   value={formData.labourName}
                   onChange={handleChange}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${errors.labourName ? 'border-red-300' : ''}`}
+                  className={`input w-full ${errors.labourName ? 'border-red-300' : ''}`}
                   placeholder="Add Labour Name"
                 />
                 {errors.labourName && (
@@ -207,9 +199,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                 <label htmlFor="mobileNumber" className="block text-sm font-medium text-gray-700 mb-1">
                   Mobile Number
                 </label>
-                <div className="flex">
-                  <div className="flex items-center px-3 py-2 border border-gray-300 border-r-0 rounded-l-md bg-gray-50">
-                    <span className="text-sm text-gray-500">🇮🇳 +91</span>
+                <div className="flex items-stretch">
+                  <div className="flex items-center justify-center px-3 py-2 border border-gray-300 border-r-0 rounded-l-md bg-gray-50 text-sm text-gray-500 h-full">
+                    <span>🇮🇳 +91</span>
                   </div>
                   <input
                     type="tel"
@@ -217,7 +209,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                     id="mobileNumber"
                     value={formData.mobileNumber}
                     onChange={handleChange}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="flex-1 input rounded-l-none border-l-0"
                     placeholder="Enter mobile number"
                   />
                 </div>
@@ -234,7 +226,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                     id="projectId"
                     value={formData.projectId}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none ${errors.projectId ? 'border-red-300' : ''}`}
+                    className={`input appearance-none pr-10 ${errors.projectId ? 'border-red-300' : ''}`}
                   >
                     <option value="">Select projects</option>
                     {projects.map((project) => (
@@ -265,7 +257,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                   id="labourType"
                   value={formData.labourType}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                   placeholder="Add Type"
                 />
               </div>
@@ -281,7 +273,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                   id="timeIn"
                   value={formData.timeIn}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                 />
               </div>
 
@@ -296,7 +288,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                   id="timeOut"
                   value={formData.timeOut}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                 />
               </div>
 
@@ -314,7 +306,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                   min="0"
                   max="24"
                   step="0.5"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                 />
               </div>
 
@@ -328,7 +320,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                   id="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="input"
                 >
                   {ATTENDANCE_STATUSES.map((status) => (
                     <option key={status.value} value={status.value}>
@@ -338,19 +330,33 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                 </select>
               </div>
             </div>
-
-            {/* Footer */}
-            <div className="flex justify-end px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Saving...' : (attendance ? 'UPDATE LABOUR' : 'CREATE NEW LABOUR')}
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+          
+          <div className="modal-footer flex-row justify-between space-x-2">
+            <button
+              type="button"
+              className="btn-secondary flex-1"
+              onClick={handleClose}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary flex-1"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="loading-spinner h-4 w-4 mr-2"></div>
+                  Saving...
+                </div>
+              ) : (
+                attendance ? 'Update Labour' : 'Create New Labour'
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

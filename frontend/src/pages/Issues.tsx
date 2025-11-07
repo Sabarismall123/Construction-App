@@ -80,11 +80,11 @@ const Issues: React.FC = () => {
             Track and manage project issues and problems
           </p>
         </div>
-        <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
+        <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-2">
           {hasRole(['admin', 'manager', 'site_supervisor']) && (
             <button
               onClick={() => setShowForm(true)}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-sm lg:px-3 lg:py-2"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Issue
@@ -97,7 +97,7 @@ const Issues: React.FC = () => {
       <div className="card">
         <div className="card-body p-4">
           <div className="flex flex-col space-y-3">
-            <div className="relative">
+            <div className="relative flex-1 lg:max-w-md">
               <div className="search-icon">
                 <Search className="h-5 w-5" />
               </div>
@@ -109,47 +109,49 @@ const Issues: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div>
-              <MobileDropdown
-                options={[
-                  { value: '', label: 'All Statuses' },
-                  ...ISSUE_STATUSES.map(status => ({
-                    value: status.value,
-                    label: status.label
-                  }))
-                ]}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                placeholder="All Statuses"
-              />
-            </div>
-            <div>
-              <MobileDropdown
-                options={[
-                  { value: '', label: 'All Priorities' },
-                  ...PRIORITIES.map(priority => ({
-                    value: priority.value,
-                    label: priority.label
-                  }))
-                ]}
-                value={priorityFilter}
-                onChange={setPriorityFilter}
-                placeholder="All Priorities"
-              />
-            </div>
-            <div>
-              <MobileDropdown
-                options={[
-                  { value: '', label: 'All Projects' },
-                  ...projects.map(project => ({
-                    value: project.id,
-                    label: project.name
-                  }))
-                ]}
-                value={projectFilter}
-                onChange={setProjectFilter}
-                placeholder="All Projects"
-              />
+            <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
+              <div className="lg:w-auto lg:min-w-[180px]">
+                <MobileDropdown
+                  options={[
+                    { value: '', label: 'All Statuses' },
+                    ...ISSUE_STATUSES.map(status => ({
+                      value: status.value,
+                      label: status.label
+                    }))
+                  ]}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  placeholder="All Statuses"
+                />
+              </div>
+              <div className="lg:w-auto lg:min-w-[180px]">
+                <MobileDropdown
+                  options={[
+                    { value: '', label: 'All Priorities' },
+                    ...PRIORITIES.map(priority => ({
+                      value: priority.value,
+                      label: priority.label
+                    }))
+                  ]}
+                  value={priorityFilter}
+                  onChange={setPriorityFilter}
+                  placeholder="All Priorities"
+                />
+              </div>
+              <div className="lg:w-auto lg:min-w-[180px]">
+                <MobileDropdown
+                  options={[
+                    { value: '', label: 'All Projects' },
+                    ...projects.map(project => ({
+                      value: project.id,
+                      label: project.name
+                    }))
+                  ]}
+                  value={projectFilter}
+                  onChange={setProjectFilter}
+                  placeholder="All Projects"
+                />
+              </div>
             </div>
           </div>
         </div>

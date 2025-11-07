@@ -74,10 +74,10 @@ const PettyCash: React.FC = () => {
   return (
     <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Petty Cash</h1>
-          <p className="mt-1 text-sm text-gray-500">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Petty Cash</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Track and manage small expenses and reimbursements
           </p>
         </div>
@@ -87,7 +87,7 @@ const PettyCash: React.FC = () => {
               setEditingExpense(null);
               setShowForm(true);
             }}
-            className="w-full btn-primary flex items-center justify-center"
+            className="w-full lg:w-auto btn-primary flex items-center justify-center"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Expense
@@ -96,7 +96,7 @@ const PettyCash: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
@@ -135,88 +135,96 @@ const PettyCash: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="card-body p-4">
-        <div className="flex flex-col space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+      <div className="card">
+        <div className="card-body p-4">
+          <div className="flex flex-col space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <div className="search-icon">
+                <Search className="h-5 w-5" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search expenses..."
+                className="search-input"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Search expenses..."
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
 
-          {/* Filters Row */}
-          <div className="flex flex-col space-y-3">
-            <MobileDropdown
-              options={categoryOptions}
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              placeholder="All Categories"
-              className="w-full"
-            />
-            <MobileDropdown
-              options={projectOptions}
-              value={projectFilter}
-              onChange={setProjectFilter}
-              placeholder="All Projects"
-              className="w-full"
-            />
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              placeholder="From Date"
-            />
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              placeholder="To Date"
-            />
-          </div>
-
-          {/* Debug Info and Clear Filters */}
-          <div className="flex flex-col space-y-2">
-            <div className="text-sm text-gray-600">
-              Showing {filteredExpenses.length} of {pettyCash.length} expenses
+            {/* Filters Row */}
+            <div className="flex flex-col space-y-3 lg:flex-row lg:space-y-0 lg:space-x-3">
+              <div className="flex-1">
+                <MobileDropdown
+                  options={categoryOptions}
+                  value={categoryFilter}
+                  onChange={setCategoryFilter}
+                  placeholder="All Categories"
+                  className="w-full"
+                />
+              </div>
+              <div className="flex-1">
+                <MobileDropdown
+                  options={projectOptions}
+                  value={projectFilter}
+                  onChange={setProjectFilter}
+                  placeholder="All Projects"
+                  className="w-full"
+                />
+              </div>
+              <div className="flex-1">
+                <input
+                  type="date"
+                  className="input w-full"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  placeholder="From Date"
+                />
+              </div>
+              <div className="flex-1">
+                <input
+                  type="date"
+                  className="input w-full"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  placeholder="To Date"
+                />
+              </div>
             </div>
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className="w-full btn-secondary flex items-center justify-center"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Clear all filters
-              </button>
-            )}
+
+            {/* Debug Info and Clear Filters */}
+            <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+              <div className="text-sm text-gray-600">
+                Showing {filteredExpenses.length} of {pettyCash.length} expenses
+              </div>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="w-full lg:w-auto btn-secondary flex items-center justify-center"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear all filters
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Expenses List */}
-      <div className="card-body p-4">
-        <div className="flex flex-col space-y-3">
-          {filteredExpenses.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Receipt className="h-6 w-6 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No expenses found</h3>
-              <p className="text-sm text-gray-500">
-                {searchTerm || categoryFilter || projectFilter || dateFrom || dateTo
-                  ? 'Try adjusting your search or filter criteria.'
-                  : 'Get started by adding your first expense.'}
-              </p>
-            </div>
-          ) : (
+      {filteredExpenses.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Receipt className="h-12 w-12" />
+          </div>
+          <h3 className="empty-state-title">No expenses found</h3>
+          <p className="empty-state-description">
+            {searchTerm || categoryFilter || projectFilter || dateFrom || dateTo
+              ? 'Try adjusting your search or filter criteria.'
+              : 'Get started by adding your first expense.'}
+          </p>
+        </div>
+      ) : (
             <div className="space-y-4">
               {filteredExpenses.map((expense) => (
                 <div key={expense.id} className="card hover:shadow-md transition-shadow">
@@ -297,8 +305,6 @@ const PettyCash: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
-      </div>
 
       {/* Petty Cash Form Modal */}
       {showForm && (

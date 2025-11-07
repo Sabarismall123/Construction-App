@@ -94,10 +94,10 @@ const Projects: React.FC = () => {
             Manage your construction projects and track their progress
           </p>
         </div>
-        <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
+        <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-2">
           <button
             onClick={handleExportExcel}
-            className="w-full lg:w-auto btn-secondary flex items-center justify-center"
+            className="w-full lg:w-auto btn-secondary flex items-center justify-center text-sm lg:px-3 lg:py-2"
           >
             <Download className="h-4 w-4 mr-2" />
             Export Excel
@@ -105,7 +105,7 @@ const Projects: React.FC = () => {
           {hasRole(['admin', 'manager']) && (
             <button
               onClick={() => setShowForm(true)}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-sm lg:px-3 lg:py-2"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Project
@@ -117,8 +117,8 @@ const Projects: React.FC = () => {
       {/* Filters */}
       <div className="card">
         <div className="card-body p-4">
-          <div className="flex flex-col space-y-3">
-            <div className="relative">
+          <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+            <div className="relative flex-1 lg:max-w-md">
               <div className="search-icon">
                 <Search className="h-5 w-5" />
               </div>
@@ -130,7 +130,7 @@ const Projects: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div>
+            <div className="lg:w-auto lg:min-w-[200px] lg:ml-auto">
               <MobileDropdown
                 options={[
                   { value: '', label: 'All Statuses' },
@@ -149,7 +149,7 @@ const Projects: React.FC = () => {
       </div>
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 gap-4 pb-20">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 pb-20">
         {filteredProjects.map((project) => (
           <div 
             key={project.id} 
