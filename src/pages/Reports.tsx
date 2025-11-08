@@ -1,0 +1,262 @@
+import React, { useState } from 'react';
+import { Download, FileText, BarChart3, TrendingUp, Calendar } from 'lucide-react';
+import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatDate, formatCurrency } from '@/utils';
+
+const Reports: React.FC = () => {
+  const { getDashboardStats, projects, tasks, issues, pettyCash, attendance } = useData();
+  const { hasPermission } = useAuth();
+  const [selectedModule, setSelectedModule] = useState('all');
+  const [dateRange, setDateRange] = useState({
+    from: formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    to: formatDate(new Date(), 'yyyy-MM-dd')
+  });
+  const [reportFormat, setReportFormat] = useState('pdf');
+
+  if (!hasPermission('reports')) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">
+          <BarChart3 className="h-12 w-12" />
+        </div>
+        <h3 className="empty-state-title">Access Denied</h3>
+        <p className="empty-state-description">
+          You don't have permission to access the reports module.
+        </p>
+      </div>
+    );
+  }
+
+  const stats = getDashboardStats();
+
+  const handleGenerateReport = () => {
+    // In a real app, this would generate and download the report
+    alert(`Generating ${reportFormat.toUpperCase()} report for ${selectedModule} from ${dateRange.from} to ${dateRange.to}`);
+  };
+
+  const reportModules = [
+    { key: 'all', label: 'All Modules', icon: '📊' },
+    { key: 'projects', label: 'Projects', icon: '🏗️' },
+    { key: 'tasks', label: 'Tasks', icon: '✅' },
+    { key: 'issues', label: 'Issues', icon: '⚠️' },
+    { key: 'resources', label: 'Resources', icon: '👥' },
+    { key: 'attendance', label: 'Attendance', icon: '⏰' },
+    { key: 'petty_cash', label: 'Petty Cash', icon: '💰' },
+    { key: 'commercial', label: 'Commercial', icon: '🏪' }
+  ];
+
+  return (
+    <div className="mobile-content w-full px-4 py-4 space-y-4">
+      {/* Header */}
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-gray-900">Reports</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Generate and export comprehensive reports for all modules
+          </p>
+        </div>
+      </div>
+
+      {/* Report Configuration */}
+      <div className="card">
+        <div className="card-body p-4">
+          <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-3 lg:mb-4">Report Configuration</h3>
+          <div className="flex flex-col space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+            <div>
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">Module</label>
+              <select
+                className="input w-full text-sm"
+                value={selectedModule}
+                onChange={(e) => setSelectedModule(e.target.value)}
+              >
+                {reportModules.map((module) => (
+                  <option key={module.key} value={module.key}>
+                    {module.icon} {module.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">Format</label>
+              <select
+                className="input w-full text-sm"
+                value={reportFormat}
+                onChange={(e) => setReportFormat(e.target.value)}
+              >
+                <option value="pdf">PDF</option>
+                <option value="excel">Excel</option>
+                <option value="csv">CSV</option>
+              </select>
+            </div>
+            <div>
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">From Date</label>
+              <input
+                type="date"
+                className="input w-full text-sm"
+                value={dateRange.from}
+                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">To Date</label>
+              <input
+                type="date"
+                className="input w-full text-sm"
+                value={dateRange.to}
+                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="mt-3 lg:mt-6">
+            <button
+              onClick={handleGenerateReport}
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
+            >
+              <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
+              Generate Report
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="stat-label">Total Projects</p>
+              <p className="stat-value">{stats.totalProjects}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-blue-500">
+              <BarChart3 className="h-6 w-6 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="stat-label">Active Tasks</p>
+              <p className="stat-value">{stats.pendingTasks}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-green-500">
+              <TrendingUp className="h-6 w-6 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="stat-label">Open Issues</p>
+              <p className="stat-value">{stats.openIssues}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-red-500">
+              <FileText className="h-6 w-6 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="stat-label">Total Expenses</p>
+              <p className="stat-value">{formatCurrency(stats.totalExpenses)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-yellow-500">
+              <Calendar className="h-6 w-6 text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Report Templates */}
+      <div className="flex flex-col space-y-4">
+        <div className="card hover:shadow-md transition-shadow cursor-pointer">
+          <div className="card-body p-4">
+            <div className="flex items-center mb-3 lg:mb-4">
+              <div className="h-8 w-8 lg:h-10 lg:w-10 bg-blue-100 rounded-lg flex items-center justify-center mr-2 lg:mr-3">
+                <BarChart3 className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
+              </div>
+              <h3 className="text-base lg:text-lg font-medium text-gray-900">Project Summary</h3>
+            </div>
+            <p className="text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
+              Comprehensive overview of all projects including progress, budget, and timeline.
+            </p>
+            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2">
+              <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
+              Generate Report
+            </button>
+          </div>
+        </div>
+
+        <div className="card hover:shadow-md transition-shadow cursor-pointer">
+          <div className="card-body p-4">
+            <div className="flex items-center mb-3 lg:mb-4">
+              <div className="h-8 w-8 lg:h-10 lg:w-10 bg-green-100 rounded-lg flex items-center justify-center mr-2 lg:mr-3">
+                <TrendingUp className="h-4 w-4 lg:h-5 lg:w-5 text-green-600" />
+              </div>
+              <h3 className="text-base lg:text-lg font-medium text-gray-900">Financial Report</h3>
+            </div>
+            <p className="text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
+              Detailed financial analysis including expenses, budget utilization, and cost trends.
+            </p>
+            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2">
+              <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
+              Generate Report
+            </button>
+          </div>
+        </div>
+
+        <div className="card hover:shadow-md transition-shadow cursor-pointer">
+          <div className="card-body p-4">
+            <div className="flex items-center mb-3 lg:mb-4">
+              <div className="h-8 w-8 lg:h-10 lg:w-10 bg-purple-100 rounded-lg flex items-center justify-center mr-2 lg:mr-3">
+                <FileText className="h-4 w-4 lg:h-5 lg:w-5 text-purple-600" />
+              </div>
+              <h3 className="text-base lg:text-lg font-medium text-gray-900">Attendance Report</h3>
+            </div>
+            <p className="text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
+              Employee attendance summary with working hours, overtime, and attendance rates.
+            </p>
+            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2">
+              <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
+              Generate Report
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Reports */}
+      <div className="card">
+        <div className="card-body p-4">
+          <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-3 lg:mb-4">Recent Reports</h3>
+        <div className="space-y-2 lg:space-y-3">
+          {[
+            { name: 'Project Summary - Q1 2024', date: '2024-01-15', format: 'PDF', size: '2.3 MB' },
+            { name: 'Financial Report - March 2024', date: '2024-03-31', format: 'Excel', size: '1.8 MB' },
+            { name: 'Attendance Report - March 2024', date: '2024-03-31', format: 'PDF', size: '1.2 MB' }
+          ].map((report, index) => (
+            <div key={index} className="flex items-center justify-between p-2 lg:p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center flex-1 min-w-0">
+                <FileText className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400 mr-2 lg:mr-3 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs lg:text-sm font-medium text-gray-900 truncate">{report.name}</p>
+                  <p className="text-[10px] lg:text-xs text-gray-500 truncate">{report.date} • {report.format} • {report.size}</p>
+                </div>
+              </div>
+              <button className="btn-secondary btn-sm flex-shrink-0 ml-2 text-xs px-2 py-1 lg:text-sm lg:px-3 lg:py-1.5">
+                <Download className="h-3 w-3 lg:h-4 lg:w-4 mr-0.5 lg:mr-1" />
+                <span className="hidden lg:inline">Download</span>
+              </button>
+            </div>
+          ))}
+        </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Reports;
