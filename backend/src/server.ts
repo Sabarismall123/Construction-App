@@ -78,13 +78,21 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-});
-app.use(limiter);
+// Rate limiting - disabled in development, enabled in production
+const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+if (!isDevelopment) {
+  const limiter = rateLimit({
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(limiter);
+  console.log('✅ Rate limiting enabled for production');
+} else {
+  console.log('⚠️  Rate limiting disabled for development');
+}
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -131,30 +139,75 @@ app.use('/api/material-consumptions', materialConsumptionsRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// Database connection
-const connectDB = async () => {
-  try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/construction_management';
-    await mongoose.connect(mongoURI);
-    console.log('✅ MongoDB connected successfully');
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
-    console.warn('⚠️  Server will continue without database connection');
-    console.warn('⚠️  Some features may not work until MongoDB is available');
-    // Don't exit - allow server to start without DB for development
-    // process.exit(1);
+// Database connection with retry logic
+const connectDB = async (retries = 5, delay = 5000) => {
+  const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/construction_management';
+  
+  const mongooseOptions = {
+    serverSelectionTimeoutMS: 10000, // Timeout after 10s
+    socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+    maxPoolSize: 10, // Maintain up to 10 socket connections
+    minPoolSize: 1, // Maintain at least 1 socket connection
+    maxIdleTimeMS: 30000, // Close connections after 30s of inactivity
+    connectTimeoutMS: 10000, // Give up initial connection after 10s
+    // bufferCommands is enabled by default, no need to specify
+  };
+
+  for (let i = 0; i < retries; i++) {
+    try {
+      await mongoose.connect(mongoURI, mongooseOptions);
+      console.log('✅ MongoDB connected successfully');
+      console.log(`📊 Database: ${mongoose.connection.name}`);
+      
+      // Handle connection events
+      mongoose.connection.on('error', (err) => {
+        console.error('❌ MongoDB connection error:', err);
+      });
+      
+      mongoose.connection.on('disconnected', () => {
+        console.warn('⚠️  MongoDB disconnected. Attempting to reconnect...');
+        connectDB(3, 5000); // Retry with fewer attempts
+      });
+      
+      mongoose.connection.on('reconnected', () => {
+        console.log('✅ MongoDB reconnected successfully');
+      });
+      
+      return;
+    } catch (error: any) {
+      console.error(`❌ MongoDB connection attempt ${i + 1}/${retries} failed:`, error.message);
+      
+      if (i < retries - 1) {
+        console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.error('❌ MongoDB connection failed after all retries');
+        console.warn('⚠️  Server will continue without database connection');
+        console.warn('⚠️  Some features may not work until MongoDB is available');
+        console.warn('💡 To fix MongoDB Atlas connection:');
+        console.warn('   1. Go to: https://cloud.mongodb.com/');
+        console.warn('   2. Navigate to: Network Access → Add IP Address');
+        console.warn('   3. Click "Add Current IP Address" or enter your IP manually');
+        console.warn('   4. Wait 1-2 minutes for changes to take effect');
+        console.warn('   5. For development, you can allow all IPs: 0.0.0.0/0 (less secure)');
+        console.warn('   📖 See MONGODB_ATLAS_SETUP.md for detailed instructions');
+        // Throw error so server startup can handle it
+        throw new Error('MongoDB connection failed after all retries');
+      }
+    }
   }
+  // If we get here, all retries failed
+  throw new Error('MongoDB connection failed');
 };
 
 // Start server
 const startServer = async () => {
   try {
-    // Try to connect to database, but don't block server startup
-    connectDB().catch(err => {
-      console.warn('⚠️  Database connection will be retried in background');
-    });
+    // Try to connect to database first
+    console.log('🔄 Attempting to connect to MongoDB...');
+    await connectDB();
     
-    // Start server regardless of database connection status
+    // Start server after database connection is established
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -163,7 +216,15 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
-    process.exit(1);
+    // If connection fails, still start server but warn user
+    console.warn('⚠️  Starting server without database connection...');
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${PORT} (without database)`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 Frontend URL: http://localhost:5173`);
+      console.log(`🔗 API URL: http://localhost:${PORT}/api`);
+      console.warn('⚠️  Database operations will fail until MongoDB is connected');
+    });
   }
 };
 

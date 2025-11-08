@@ -69,17 +69,17 @@ const Settings: React.FC = () => {
         <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
           <button
             onClick={handleReset}
-            className="w-full lg:w-auto btn-secondary flex items-center justify-center"
+            className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
           >
-            <RotateCcw className="h-4 w-4 mr-2" />
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
             Reset
           </button>
           <button
             onClick={handleSave}
             disabled={!hasChanges}
-            className={`w-full lg:w-auto btn-primary flex items-center justify-center ${!hasChanges ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2 ${!hasChanges ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
             Save Changes
           </button>
         </div>
@@ -89,38 +89,38 @@ const Settings: React.FC = () => {
         {/* Appearance Settings */}
         <div className="card">
           <div className="card-body p-4">
-            <div className="flex items-center mb-4">
-              <Palette className="h-5 w-5 text-primary-600 mr-2" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Appearance</h3>
+            <div className="flex items-center mb-3 lg:mb-4">
+              <Palette className="h-4 w-4 lg:h-5 lg:w-5 text-primary-600 mr-2" />
+              <h3 className="text-base lg:text-lg font-medium text-gray-900 dark:text-white">Appearance</h3>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3 lg:space-y-4">
               {/* Theme Toggle */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">
                   Theme
                 </label>
                 <div className="flex flex-col space-y-2 lg:flex-row lg:space-y-0 lg:space-x-3">
                   <button
                     onClick={() => setTheme('light')}
-                    className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 transition-colors ${
+                    className={`flex items-center justify-center px-3 py-2 lg:px-4 lg:py-3 rounded-lg border-2 transition-colors text-xs lg:text-sm ${
                       theme === 'light'
                         ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-200'
                         : 'border-gray-200 text-gray-700 hover:border-gray-300 dark:border-gray-600 dark:text-gray-300'
                     }`}
                   >
-                    <Sun className="h-4 w-4 mr-2" />
+                    <Sun className="h-3.5 w-3.5 lg:h-4 lg:w-4 mr-1.5 lg:mr-2" />
                     Light
                   </button>
                   <button
                     onClick={() => setTheme('dark')}
-                    className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 transition-colors ${
+                    className={`flex items-center justify-center px-3 py-2 lg:px-4 lg:py-3 rounded-lg border-2 transition-colors text-xs lg:text-sm ${
                       theme === 'dark'
                         ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-200'
                         : 'border-gray-200 text-gray-700 hover:border-gray-300 dark:border-gray-600 dark:text-gray-300'
                     }`}
                   >
-                    <Moon className="h-4 w-4 mr-2" />
+                    <Moon className="h-3.5 w-3.5 lg:h-4 lg:w-4 mr-1.5 lg:mr-2" />
                     Dark
                   </button>
                 </div>
@@ -129,10 +129,10 @@ const Settings: React.FC = () => {
             {/* Compact Mode */}
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="text-xs lg:text-sm font-medium text-gray-700 dark:text-gray-300">
                   Compact Mode
                 </label>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-[10px] lg:text-xs text-gray-500 dark:text-gray-400">
                   Reduce spacing for a more compact interface
                 </p>
               </div>
@@ -158,20 +158,20 @@ const Settings: React.FC = () => {
         {/* General Settings */}
         <div className="card">
           <div className="card-body p-4">
-            <div className="flex items-center mb-4">
-            <Globe className="h-5 w-5 text-primary-600 mr-2" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">General</h3>
+            <div className="flex items-center mb-3 lg:mb-4">
+            <Globe className="h-4 w-4 lg:h-5 lg:w-5 text-primary-600 mr-2" />
+            <h3 className="text-base lg:text-lg font-medium text-gray-900 dark:text-white">General</h3>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-3 lg:space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">
                 Language
               </label>
               <select
                 value={settings.language}
                 onChange={(e) => handleDirectSettingChange('language', e.target.value)}
-                className="input w-full"
+                className="input w-full text-sm"
               >
                 <option value="en">English</option>
                 <option value="es">Spanish</option>
@@ -182,13 +182,13 @@ const Settings: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">
                 Timezone
               </label>
               <select
                 value={settings.timezone}
                 onChange={(e) => handleDirectSettingChange('timezone', e.target.value)}
-                className="input w-full"
+                className="input w-full text-sm"
               >
                 <option value="UTC">UTC</option>
                 <option value="EST">Eastern Time</option>
@@ -199,13 +199,13 @@ const Settings: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">
                 Date Format
               </label>
               <select
                 value={settings.dateFormat}
                 onChange={(e) => handleDirectSettingChange('dateFormat', e.target.value)}
-                className="input w-full"
+                className="input w-full text-sm"
               >
                 <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                 <option value="DD/MM/YYYY">DD/MM/YYYY</option>
@@ -214,13 +214,13 @@ const Settings: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">
                 Currency
               </label>
               <select
                 value={settings.currency}
                 onChange={(e) => handleDirectSettingChange('currency', e.target.value)}
-                className="input w-full"
+                className="input w-full text-sm"
               >
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
@@ -235,54 +235,54 @@ const Settings: React.FC = () => {
         {/* Account Settings */}
         <div className="card">
           <div className="card-body p-4">
-            <div className="flex items-center mb-4">
-            <User className="h-5 w-5 text-primary-600 mr-2" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Account</h3>
+            <div className="flex items-center mb-3 lg:mb-4">
+            <User className="h-4 w-4 lg:h-5 lg:w-5 text-primary-600 mr-2" />
+            <h3 className="text-base lg:text-lg font-medium text-gray-900 dark:text-white">Account</h3>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-3 lg:space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="label text-xs lg:text-sm mb-1">
                 Name
               </label>
               <input
                 type="text"
                 value={user?.name || ''}
                 disabled
-                className="input w-full bg-gray-50 dark:bg-gray-700"
+                className="input w-full text-sm bg-gray-50 dark:bg-gray-700"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="label text-xs lg:text-sm mb-1">
                 Email
               </label>
               <input
                 type="email"
                 value={user?.email || ''}
                 disabled
-                className="input w-full bg-gray-50 dark:bg-gray-700"
+                className="input w-full text-sm bg-gray-50 dark:bg-gray-700"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="label text-xs lg:text-sm mb-1">
                 Role
               </label>
               <input
                 type="text"
                 value={user?.role || ''}
                 disabled
-                className="input w-full bg-gray-50 dark:bg-gray-700"
+                className="input w-full text-sm bg-gray-50 dark:bg-gray-700"
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="text-xs lg:text-sm font-medium text-gray-700 dark:text-gray-300">
                   Auto Save
                 </label>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-[10px] lg:text-xs text-gray-500 dark:text-gray-400">
                   Automatically save changes
                 </p>
               </div>

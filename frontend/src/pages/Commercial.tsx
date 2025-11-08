@@ -39,12 +39,12 @@ const Commercial: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
-          <button className="w-full lg:w-auto btn-secondary flex items-center justify-center">
-            <Download className="h-4 w-4 mr-2" />
+          <button className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2">
+            <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
             Export
           </button>
-          <button className="w-full lg:w-auto btn-primary flex items-center justify-center">
-            <Plus className="h-4 w-4 mr-2" />
+          <button className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2">
+            <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
             Add Item
           </button>
         </div>
@@ -60,13 +60,13 @@ const Commercial: React.FC = () => {
                 <Link
                   key={submodule.key}
                   to={`/commercial/${submodule.key}`}
-                  className={`flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex items-center px-2 py-2 lg:px-3 lg:py-3 text-xs lg:text-sm font-medium rounded-lg transition-colors ${
                     isActive
                       ? 'bg-primary-100 text-primary-700'
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <span className="mr-3 text-lg">{submodule.icon}</span>
+                  <span className="mr-2 lg:mr-3 text-base lg:text-lg">{submodule.icon}</span>
                   {submodule.label}
                 </Link>
               );
@@ -106,9 +106,9 @@ const InventoryContent: React.FC = () => {
                 setEditingItem(null);
                 setShowForm(true);
               }}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Add Item
             </button>
           </div>
@@ -153,9 +153,9 @@ const SiteTransfersContent: React.FC = () => {
                 setEditingTransfer(null);
                 setShowForm(true);
               }}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               New Transfer
             </button>
           </div>
@@ -200,9 +200,9 @@ const MaterialIssueContent: React.FC = () => {
                 setEditingIssue(null);
                 setShowForm(true);
               }}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Issue Material
             </button>
           </div>
@@ -247,9 +247,9 @@ const MaterialReturnContent: React.FC = () => {
                 setEditingReturn(null);
                 setShowForm(true);
               }}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Return Material
             </button>
           </div>
@@ -294,9 +294,9 @@ const ConsumptionsContent: React.FC = () => {
                 setEditingConsumption(null);
                 setShowForm(true);
               }}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Record Consumption
             </button>
           </div>

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 import Task from '../models/Task';
 
 interface AuthRequest extends Request {
@@ -104,17 +105,76 @@ export const createTask = async (req: AuthRequest, res: Response, next: NextFunc
       return;
     }
 
-    // Create a default user ID for tasks created without authentication
-    const defaultUserId = '68f71938bb60c36e384556f8'; // Use the test user ID
+    // Validate assignedTo is a valid MongoDB ObjectId
+    let assignedToId = req.body.assignedTo;
+    if (assignedToId && typeof assignedToId === 'string') {
+      // Check if it's a valid ObjectId format
+      if (!/^[0-9a-fA-F]{24}$/.test(assignedToId)) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid assigned user ID - must be a valid MongoDB ObjectId'
+        });
+        return;
+      }
+      // Convert to ObjectId
+      assignedToId = new mongoose.Types.ObjectId(assignedToId);
+    } else if (!assignedToId) {
+      // If no user assigned, use default or require it
+      res.status(400).json({
+        success: false,
+        error: 'Assigned user is required'
+      });
+      return;
+    }
+    
+    // Get user name for display
+    let assignedToName = 'Unknown User';
+    try {
+      const User = mongoose.model('User');
+      const assignedUser = await User.findById(assignedToId).select('name email');
+      if (assignedUser) {
+        assignedToName = assignedUser.name || assignedUser.email || 'Unknown User';
+      }
+    } catch (error) {
+      console.warn('Could not fetch user name for assignedTo:', error);
+    }
+    
+    // Get creator information (from request user if available, or from req.body)
+    let createdById = null;
+    let createdByName = 'System';
+    let createdByRole = 'system';
+    
+    if (req.user && req.user.id) {
+      // If user is authenticated, use their info
+      createdById = new mongoose.Types.ObjectId(req.user.id);
+      createdByName = req.user.name || 'Unknown User';
+      createdByRole = req.user.role || 'user';
+    } else if (req.body.createdBy) {
+      // If createdBy is provided in body, use it
+      try {
+        const User = mongoose.model('User');
+        const creator = await User.findById(req.body.createdBy).select('name email role');
+        if (creator) {
+          createdById = new mongoose.Types.ObjectId(req.body.createdBy);
+          createdByName = creator.name || creator.email || 'Unknown User';
+          createdByRole = creator.role || 'user';
+        }
+      } catch (error) {
+        console.warn('Could not fetch creator user:', error);
+      }
+    }
     
     const taskData = {
       ...req.body,
-      assignedTo: req.body.assignedTo || defaultUserId, // Use provided user or default
+      assignedTo: assignedToId, // Use validated ObjectId
       description: req.body.description || 'No description provided', // Default description if not provided
       priority: req.body.priority || 'medium', // Default priority
       status: req.body.status || 'todo', // Default status
       estimatedHours: req.body.estimatedHours || 0, // Default hours
-      assignedToName: req.body.assignedTo || 'Unknown User' // Store the name for display
+      assignedToName: assignedToName, // Store the name for display
+      createdBy: createdById, // Store creator ID
+      createdByName: createdByName, // Store creator name
+      createdByRole: createdByRole // Store creator role
     };
 
     const task = await Task.create(taskData);

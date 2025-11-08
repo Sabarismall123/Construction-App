@@ -112,9 +112,9 @@ const Users: React.FC = () => {
         <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
           <button
             onClick={handleExportExcel}
-            className="w-full lg:w-auto btn-secondary flex items-center justify-center"
+            className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
             Export Excel
           </button>
           {hasRole(['manager']) && (
@@ -123,9 +123,9 @@ const Users: React.FC = () => {
                 setEditingUser(null);
                 setShowForm(true);
               }}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Add User
             </button>
           )}
@@ -171,9 +171,9 @@ const Users: React.FC = () => {
               {hasActiveFilters && (
                 <button
                   onClick={clearAllFilters}
-                  className="w-full lg:w-auto btn-secondary flex items-center justify-center"
+                  className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
                   Clear all filters
                 </button>
               )}

@@ -6,6 +6,9 @@ export interface ITask extends Document {
   projectId: mongoose.Types.ObjectId;
   assignedTo: mongoose.Types.ObjectId | string; // Allow both ObjectId and string
   assignedToName?: string; // Store the name for display
+  createdBy?: mongoose.Types.ObjectId; // User who created/assigned the task
+  createdByName?: string; // Name of the user who created/assigned the task
+  createdByRole?: string; // Role of the user who created/assigned the task
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'todo' | 'in_progress' | 'review' | 'completed';
   dueDate: Date;
@@ -40,6 +43,18 @@ const TaskSchema = new Schema<ITask>({
     required: [true, 'Assigned user is required']
   },
   assignedToName: {
+    type: String,
+    trim: true
+  },
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  createdByName: {
+    type: String,
+    trim: true
+  },
+  createdByRole: {
     type: String,
     trim: true
   },

@@ -85,18 +85,23 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 
     const { email, password } = req.body;
 
+    // Normalize email (lowercase)
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     if (!user) {
+      console.log('❌ Login failed: User not found for email:', normalizedEmail);
       res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: 'Invalid email or password'
       });
       return;
     }
 
     // Check if user is active
     if (!user.isActive) {
+      console.log('❌ Login failed: Account is deactivated for email:', normalizedEmail);
       res.status(401).json({
         success: false,
         error: 'Account is deactivated'
@@ -107,12 +112,15 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.log('❌ Login failed: Password mismatch for email:', normalizedEmail);
       res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: 'Invalid email or password'
       });
       return;
     }
+
+    console.log('✅ Login successful for user:', user.email);
 
     // Update last login
     user.lastLogin = new Date();
