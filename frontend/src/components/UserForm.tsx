@@ -179,27 +179,28 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
       <div className="modal max-w-lg">
         <div className="modal-header flex items-center justify-between">
           <div className="flex items-center">
-            <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-primary-100 mr-3">
-              <UserIcon className="h-5 w-5 text-primary-600" />
+            <div className="flex-shrink-0 flex items-center justify-center h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-primary-100 mr-2 lg:mr-3">
+              <UserIcon className="h-4 w-4 lg:h-5 lg:w-5 text-primary-600" />
             </div>
-            <h2 className="modal-title">
+            <h2 className="modal-title text-lg lg:text-xl">
               {user ? 'Edit User' : 'Add New User'}
             </h2>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg flex-shrink-0 ml-4"
+            className="p-1.5 lg:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg flex-shrink-0 ml-2 lg:ml-4"
+            aria-label="Close"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4 lg:h-5 lg:w-5" />
           </button>
         </div>
         
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            <div className="space-y-4">
+            <div className="space-y-1 lg:space-y-4">
               {/* Name */}
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="name" className="label text-xs lg:text-sm">
                   Full Name *
                 </label>
                 <input
@@ -210,22 +211,22 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                   onChange={handleChange}
                   disabled={isSubmitting}
                   autoComplete="name"
-                  className={`mt-1 input ${errors.name ? 'border-red-300' : ''}`}
+                  className={`input text-sm ${errors.name ? 'input-error' : ''}`}
                   placeholder="Enter full name"
                 />
                 {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                  <p className="form-error text-xs">{errors.name}</p>
                 )}
               </div>
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="email" className="label text-xs lg:text-sm">
                   Email Address *
                 </label>
-                <div className="mt-1 relative">
+                <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                    <Mail className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400" />
                   </div>
                   <input
                     type="email"
@@ -235,21 +236,21 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                     onChange={handleChange}
                     disabled={isSubmitting}
                     autoComplete="email"
-                    className={`input pl-10 ${errors.email ? 'border-red-300' : ''}`}
+                    className={`input pl-10 text-sm ${errors.email ? 'input-error' : ''}`}
                     placeholder="Enter email address"
                   />
                 </div>
                 {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  <p className="form-error text-xs">{errors.email}</p>
                 )}
               </div>
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="label text-xs lg:text-sm">
                   Password {!user && '*'}
                 </label>
-                <div className="mt-1 relative">
+                <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
@@ -258,7 +259,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                     onChange={handleChange}
                     disabled={isSubmitting}
                     autoComplete="new-password"
-                    className={`input pr-10 ${errors.password ? 'border-red-300' : ''}`}
+                    className={`input pr-10 text-sm ${errors.password ? 'input-error' : ''}`}
                     placeholder={user ? 'Leave blank to keep current password' : 'Enter password'}
                   />
                   <button
@@ -267,25 +268,25 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400" />
+                      <EyeOff className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400" />
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400" />
+                      <Eye className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400" />
                     )}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                  <p className="form-error text-xs">{errors.password}</p>
                 )}
               </div>
 
               {/* Role */}
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="role" className="label text-xs lg:text-sm">
                   Role * {!hasRole(['manager']) && <span className="text-gray-400">(Manager only)</span>}
                 </label>
-                <div className="mt-1 relative">
+                <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Shield className="h-5 w-5 text-gray-400" />
+                    <Shield className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400" />
                   </div>
                   <select
                     name="role"
@@ -293,7 +294,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                     value={formData.role}
                     onChange={handleChange}
                     disabled={!hasRole(['manager']) || isSubmitting}
-                    className={`input pl-10 ${!hasRole(['manager']) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    className={`input pl-10 text-sm ${!hasRole(['manager']) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   >
                     {Object.entries(ROLES).map(([key, label]) => (
                       <option key={key} value={key}>
@@ -303,7 +304,7 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
                   </select>
                 </div>
                 {!hasRole(['manager']) && (
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="form-error text-xs text-gray-500">
                     Only managers can change user roles
                   </p>
                 )}
@@ -311,10 +312,10 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
             </div>
           </div>
           
-          <div className="modal-footer flex-col lg:flex-row lg:justify-end lg:space-x-3 space-y-2 lg:space-y-0">
+          <div className="modal-footer flex-row justify-between space-x-2">
             <button
               type="button"
-              className="btn-secondary w-full lg:w-auto"
+              className="btn-secondary flex-1 text-xs px-3 py-2 lg:text-sm lg:px-4 lg:py-2"
               onClick={handleClose}
               disabled={isSubmitting}
             >
@@ -322,13 +323,13 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
             </button>
             <button
               type="submit"
-              className="btn-primary w-full lg:w-auto"
+              className="btn-primary flex-1 text-xs px-3 py-2 lg:text-sm lg:px-4 lg:py-2"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
-                  <div className="loading-spinner h-4 w-4 mr-2"></div>
-                  Saving...
+                  <div className="loading-spinner h-3 w-3 lg:h-4 lg:w-4 mr-1.5 lg:mr-2"></div>
+                  <span className="text-xs lg:text-sm">Saving...</span>
                 </div>
               ) : (
                 user ? 'Update User' : 'Add User'

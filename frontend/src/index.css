@@ -319,6 +319,10 @@
   
   .modal-overlay {
     @apply fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75 transition-opacity;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
   }
   
   .modal {
@@ -349,7 +353,7 @@
       padding: 0.5rem;
       padding-bottom: 6rem; /* Space for bottom navigation (z-30) */
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
       overflow-y: auto;
       position: fixed;

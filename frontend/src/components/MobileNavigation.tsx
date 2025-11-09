@@ -26,7 +26,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ currentPath }) => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
-      <div className="flex justify-around py-2">
+      <div className="flex justify-around py-1 lg:py-2">
         {mobileNavItems.map((item) => {
           const isActive = isItemActive(item.path);
 
@@ -35,13 +35,13 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ currentPath }) => {
               key={item.key}
               to={item.path}
               className={cn(
-                'flex flex-col items-center justify-center px-3 py-2 text-xs font-medium transition-colors',
+                'flex flex-col items-center justify-center px-2 py-1 lg:px-3 lg:py-2 text-[10px] lg:text-xs font-medium transition-colors',
                 isActive
                   ? 'text-primary-600'
                   : 'text-gray-500 hover:text-gray-700'
               )}
             >
-              <span className="text-lg mb-1">{item.icon}</span>
+              <span className="text-base lg:text-lg mb-0.5 lg:mb-1">{item.icon}</span>
               <span className="truncate">{item.label}</span>
             </Link>
           );

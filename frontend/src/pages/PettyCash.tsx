@@ -87,9 +87,9 @@ const PettyCash: React.FC = () => {
               setEditingExpense(null);
               setShowForm(true);
             }}
-            className="w-full lg:w-auto btn-primary flex items-center justify-center"
+            className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
             Add Expense
           </button>
         )}
@@ -200,9 +200,9 @@ const PettyCash: React.FC = () => {
               {hasActiveFilters && (
                 <button
                   onClick={clearAllFilters}
-                  className="w-full lg:w-auto btn-secondary flex items-center justify-center"
+                  className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
                   Clear all filters
                 </button>
               )}

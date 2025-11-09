@@ -61,12 +61,12 @@ const Reports: React.FC = () => {
       {/* Report Configuration */}
       <div className="card">
         <div className="card-body p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Report Configuration</h3>
-          <div className="flex flex-col space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+          <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-3 lg:mb-4">Report Configuration</h3>
+          <div className="flex flex-col space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Module</label>
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">Module</label>
               <select
-                className="input w-full"
+                className="input w-full text-sm"
                 value={selectedModule}
                 onChange={(e) => setSelectedModule(e.target.value)}
               >
@@ -78,9 +78,9 @@ const Reports: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">Format</label>
               <select
-                className="input w-full"
+                className="input w-full text-sm"
                 value={reportFormat}
                 onChange={(e) => setReportFormat(e.target.value)}
               >
@@ -90,30 +90,30 @@ const Reports: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">From Date</label>
               <input
                 type="date"
-                className="input w-full"
+                className="input w-full text-sm"
                 value={dateRange.from}
                 onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+              <label className="label text-xs lg:text-sm mb-1.5 lg:mb-2">To Date</label>
               <input
                 type="date"
-                className="input w-full"
+                className="input w-full text-sm"
                 value={dateRange.to}
                 onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
               />
             </div>
           </div>
-          <div className="mt-4 lg:mt-6">
+          <div className="mt-3 lg:mt-6">
             <button
               onClick={handleGenerateReport}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Generate Report
             </button>
           </div>
@@ -175,17 +175,17 @@ const Reports: React.FC = () => {
       <div className="flex flex-col space-y-4">
         <div className="card hover:shadow-md transition-shadow cursor-pointer">
           <div className="card-body p-4">
-            <div className="flex items-center mb-4">
-              <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
+            <div className="flex items-center mb-3 lg:mb-4">
+              <div className="h-8 w-8 lg:h-10 lg:w-10 bg-blue-100 rounded-lg flex items-center justify-center mr-2 lg:mr-3">
+                <BarChart3 className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">Project Summary</h3>
+              <h3 className="text-base lg:text-lg font-medium text-gray-900">Project Summary</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
               Comprehensive overview of all projects including progress, budget, and timeline.
             </p>
-            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center">
-              <Download className="h-4 w-4 mr-2" />
+            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2">
+              <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Generate Report
             </button>
           </div>
@@ -193,17 +193,17 @@ const Reports: React.FC = () => {
 
         <div className="card hover:shadow-md transition-shadow cursor-pointer">
           <div className="card-body p-4">
-            <div className="flex items-center mb-4">
-              <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                <TrendingUp className="h-5 w-5 text-green-600" />
+            <div className="flex items-center mb-3 lg:mb-4">
+              <div className="h-8 w-8 lg:h-10 lg:w-10 bg-green-100 rounded-lg flex items-center justify-center mr-2 lg:mr-3">
+                <TrendingUp className="h-4 w-4 lg:h-5 lg:w-5 text-green-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">Financial Report</h3>
+              <h3 className="text-base lg:text-lg font-medium text-gray-900">Financial Report</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
               Detailed financial analysis including expenses, budget utilization, and cost trends.
             </p>
-            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center">
-              <Download className="h-4 w-4 mr-2" />
+            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2">
+              <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Generate Report
             </button>
           </div>
@@ -211,17 +211,17 @@ const Reports: React.FC = () => {
 
         <div className="card hover:shadow-md transition-shadow cursor-pointer">
           <div className="card-body p-4">
-            <div className="flex items-center mb-4">
-              <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                <FileText className="h-5 w-5 text-purple-600" />
+            <div className="flex items-center mb-3 lg:mb-4">
+              <div className="h-8 w-8 lg:h-10 lg:w-10 bg-purple-100 rounded-lg flex items-center justify-center mr-2 lg:mr-3">
+                <FileText className="h-4 w-4 lg:h-5 lg:w-5 text-purple-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">Attendance Report</h3>
+              <h3 className="text-base lg:text-lg font-medium text-gray-900">Attendance Report</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
               Employee attendance summary with working hours, overtime, and attendance rates.
             </p>
-            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center">
-              <Download className="h-4 w-4 mr-2" />
+            <button className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2">
+              <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Generate Report
             </button>
           </div>
@@ -231,24 +231,24 @@ const Reports: React.FC = () => {
       {/* Recent Reports */}
       <div className="card">
         <div className="card-body p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Reports</h3>
-        <div className="space-y-3">
+          <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-3 lg:mb-4">Recent Reports</h3>
+        <div className="space-y-2 lg:space-y-3">
           {[
             { name: 'Project Summary - Q1 2024', date: '2024-01-15', format: 'PDF', size: '2.3 MB' },
             { name: 'Financial Report - March 2024', date: '2024-03-31', format: 'Excel', size: '1.8 MB' },
             { name: 'Attendance Report - March 2024', date: '2024-03-31', format: 'PDF', size: '1.2 MB' }
           ].map((report, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={index} className="flex items-center justify-between p-2 lg:p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center flex-1 min-w-0">
-                <FileText className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                <FileText className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400 mr-2 lg:mr-3 flex-shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">{report.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{report.date} • {report.format} • {report.size}</p>
+                  <p className="text-xs lg:text-sm font-medium text-gray-900 truncate">{report.name}</p>
+                  <p className="text-[10px] lg:text-xs text-gray-500 truncate">{report.date} • {report.format} • {report.size}</p>
                 </div>
               </div>
-              <button className="btn-secondary btn-sm flex-shrink-0 ml-2">
-                <Download className="h-4 w-4 mr-1" />
-                Download
+              <button className="btn-secondary btn-sm flex-shrink-0 ml-2 text-xs px-2 py-1 lg:text-sm lg:px-3 lg:py-1.5">
+                <Download className="h-3 w-3 lg:h-4 lg:w-4 mr-0.5 lg:mr-1" />
+                <span className="hidden lg:inline">Download</span>
               </button>
             </div>
           ))}

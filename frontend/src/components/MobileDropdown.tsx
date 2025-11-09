@@ -73,13 +73,13 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({
         ref={buttonRef}
         type="button"
         onClick={handleButtonClick}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-left text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 flex items-center justify-between"
+        className="w-full px-2.5 py-1.5 lg:px-3 lg:py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-left text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 flex items-center justify-between"
       >
         <span className={selectedOption ? "text-gray-900 font-medium" : "text-gray-500"}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown 
-          className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+          className={`h-3.5 w-3.5 lg:h-4 lg:w-4 text-gray-400 transition-transform duration-200 ${
             isOpen ? 'rotate-180' : ''
           }`} 
         />
@@ -101,7 +101,7 @@ const MobileDropdown: React.FC<MobileDropdownProps> = ({
               key={option.value}
               type="button"
               onClick={() => handleOptionClick(option.value)}
-              className={`w-full px-3 py-2 text-left text-sm focus:outline-none first:rounded-t-lg last:rounded-b-lg mobile-dropdown-option ${
+              className={`w-full px-2.5 py-1.5 lg:px-3 lg:py-2 text-left text-xs lg:text-sm focus:outline-none first:rounded-t-lg last:rounded-b-lg mobile-dropdown-option ${
                 option.value === value ? 'selected' : ''
               }`}
               style={{

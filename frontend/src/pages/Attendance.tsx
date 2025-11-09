@@ -155,23 +155,23 @@ const Attendance: React.FC = () => {
           <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-2">
             <button
               onClick={handleBulkUpload}
-              className="w-full lg:w-auto btn-secondary flex items-center justify-center text-sm lg:px-3 lg:py-2"
+              className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Bulk Upload
             </button>
             <button
               onClick={handleExport}
-              className="w-full lg:w-auto btn-secondary flex items-center justify-center text-sm lg:px-3 lg:py-2"
+              className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Export
             </button>
             <button
               onClick={() => setShowForm(true)}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center text-sm lg:px-3 lg:py-2"
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
               Create Labour
             </button>
           </div>
@@ -235,9 +235,9 @@ const Attendance: React.FC = () => {
               {hasActiveFilters && (
                 <button
                   onClick={clearAllFilters}
-                  className="w-full lg:w-auto btn-secondary flex items-center justify-center"
+                  className="w-full lg:w-auto btn-secondary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
                   Clear all filters
                 </button>
               )}
