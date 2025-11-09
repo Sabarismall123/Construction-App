@@ -4,12 +4,13 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate, searchItems, filterItems } from '@/utils';
 import { TASK_STATUSES, PRIORITIES } from '@/constants';
+import { apiService } from '@/services/api';
 import TaskForm from '@/components/TaskForm';
 import TaskDetail from '@/components/TaskDetail';
 import MobileDropdown from '@/components/MobileDropdown';
 
 const Tasks: React.FC = () => {
-  const { tasks, projects, deleteTask } = useData();
+  const { tasks, projects, users, deleteTask, getTasks } = useData();
   const { hasRole, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -20,14 +21,26 @@ const Tasks: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [editingTask, setEditingTask] = useState<any>(null);
 
+  // Show all tasks (removed user filter to show all tasks)
+  const userTasks = tasks;
+
   const filteredTasks = filterItems(
-    searchItems(tasks, searchTerm, ['title', 'description']),
+    searchItems(userTasks, searchTerm, ['title', 'description']),
     { 
       status: statusFilter,
       priority: priorityFilter,
       projectId: projectFilter
     }
   );
+  
+  // Debug: Log task counts (after filteredTasks is defined)
+  console.log('📊 Task counts:', {
+    totalTasks: tasks.length,
+    userTasks: userTasks.length,
+    filteredTasks: filteredTasks.length,
+    userId: user?.id,
+    userTasksList: userTasks.map((t: any) => ({ id: t._id || t.id, assignedTo: t.assignedTo }))
+  });
 
   const handleEdit = (task: any) => {
     setEditingTask(task);
@@ -55,6 +68,33 @@ const Tasks: React.FC = () => {
     setSelectedTask(null);
   };
 
+  // Refresh task data after updates
+  const handleTaskUpdate = async () => {
+    try {
+      // Reload tasks from API
+      const tasksResponse = await apiService.getTasks();
+      const updatedTasks = (tasksResponse as any).data || tasksResponse;
+      // Update selected task if it exists
+      if (selectedTask) {
+        const updatedTask = updatedTasks.find((t: any) => {
+          const taskId = t._id || t.id;
+          return taskId === selectedTask.id || taskId === selectedTask._id;
+        });
+        if (updatedTask) {
+          setSelectedTask({
+            ...updatedTask,
+            id: updatedTask._id || updatedTask.id,
+            projectId: updatedTask.projectId?._id || updatedTask.projectId || updatedTask.projectId,
+            assignedTo: updatedTask.assignedTo?._id || updatedTask.assignedTo || updatedTask.assignedTo,
+            attachments: updatedTask.attachments || []
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh task data:', error);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const statusConfig = TASK_STATUSES.find(s => s.value === status);
     return statusConfig?.color || 'bg-gray-100 text-gray-800';
@@ -70,6 +110,16 @@ const Tasks: React.FC = () => {
     return project?.name || 'Unknown Project';
   };
 
+  const getUserName = (assignedTo: string) => {
+    // If assignedTo is already a name (string that's not an ObjectId), return it
+    if (assignedTo && !/^[0-9a-fA-F]{24}$/.test(assignedTo)) {
+      return assignedTo;
+    }
+    // Otherwise, find the user by ID
+    const user = users.find(u => u.id === assignedTo);
+    return user ? user.name : 'Unknown User';
+  };
+
   const handleExportExcel = () => {
     // Create CSV content
     const headers = ['Title', 'Project', 'Status', 'Priority', 'Assigned To', 'Due Date', 'Description'];
@@ -80,7 +130,7 @@ const Tasks: React.FC = () => {
         `"${getProjectName(task.projectId)}"`,
         `"${TASK_STATUSES.find(s => s.value === task.status)?.label || task.status}"`,
         `"${PRIORITIES.find(p => p.value === task.priority)?.label || task.priority}"`,
-        `"${task.assignedTo}"`,
+        `"${getUserName(task.assignedTo)}"`,
         `"${formatDate(task.dueDate)}"`,
         `"${task.description.replace(/"/g, '""')}"`
       ].join(','))
@@ -277,10 +327,10 @@ const Tasks: React.FC = () => {
                   <div className="flex items-center">
                     <div className="h-5 w-5 bg-gray-300 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
                       <span className="text-xs font-medium text-gray-600">
-                        {task.assignedTo?.charAt(0) || 'U'}
+                        {getUserName(task.assignedTo)?.charAt(0)?.toUpperCase() || 'U'}
                       </span>
                     </div>
-                    <span className="truncate">User {task.assignedTo}</span>
+                    <span className="truncate">{getUserName(task.assignedTo)}</span>
                   </div>
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
@@ -331,6 +381,7 @@ const Tasks: React.FC = () => {
         <TaskDetail
           task={selectedTask}
           onClose={handleCloseDetail}
+          onTaskUpdate={handleTaskUpdate}
         />
       )}
     </div>

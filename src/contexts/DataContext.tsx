@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { toast } from 'react-hot-toast';
 import { 
   Project, Task, Issue, Resource, PettyCash, Attendance, 
   InventoryItem, SiteTransfer, MaterialIssue, MaterialReturn, 
@@ -77,6 +78,7 @@ interface DataContextType {
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'updatedAt'>) => void;
   markNotificationAsRead: (id: string) => void;
   deleteNotification: (id: string) => void;
+  clearAllNotifications: () => void;
   
   // Stats
   getDashboardStats: () => DashboardStats;
@@ -264,6 +266,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: t._id || t.id,
             projectId: t.projectId?._id || t.projectId || t.projectId,
             assignedTo: t.assignedTo?._id || t.assignedTo || t.assignedTo,
+            createdBy: t.createdBy?._id || t.createdBy || t.createdBy,
+            createdByName: t.createdByName || t.createdBy?.name || 'System',
+            createdByRole: t.createdByRole || t.createdBy?.role || '',
             attachments: t.attachments || [], // Ensure attachments array is preserved
             createdAt: new Date(t.createdAt || Date.now()),
             updatedAt: new Date(t.updatedAt || Date.now()),
@@ -503,27 +508,69 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addTask = async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'comments'>) => {
     try {
       const response = await apiService.createTask(task);
+      console.log('✅ Task created response:', response);
+      
+      // Handle different response structures
+      const responseData = (response as any).data || response;
+      
+      // Map the response to match the Task type structure
       const newTask: Task = {
-        ...(response as any).data,
-        id: (response as any).data._id || (response as any).data.id,
-        attachments: (response as any).data.attachments || [],
-        createdAt: formatDate(new Date()),
-        updatedAt: formatDate(new Date()),
-        comments: []
+        ...responseData,
+        id: responseData._id || responseData.id,
+        title: responseData.title || task.title,
+        description: responseData.description || task.description,
+        status: responseData.status || task.status,
+        priority: responseData.priority || task.priority,
+        dueDate: responseData.dueDate ? new Date(responseData.dueDate) : (task.dueDate ? new Date(task.dueDate) : new Date()),
+        projectId: responseData.projectId?._id || responseData.projectId || task.projectId,
+        // Ensure assignedTo is a string (not ObjectId) for consistent filtering
+        assignedTo: (responseData.assignedTo?._id || responseData.assignedTo || task.assignedTo)?.toString(),
+        createdBy: responseData.createdBy?._id || responseData.createdBy || task.createdBy || null,
+        createdByName: responseData.createdByName || responseData.createdBy?.name || 'System',
+        createdByRole: responseData.createdByRole || responseData.createdBy?.role || '',
+        attachments: responseData.attachments || task.attachments || [],
+        createdAt: responseData.createdAt ? new Date(responseData.createdAt) : new Date(),
+        updatedAt: responseData.updatedAt ? new Date(responseData.updatedAt) : new Date(),
+        comments: responseData.comments || []
       };
-      setData(prev => ({ ...prev, tasks: [...prev.tasks, newTask] }));
+      
+      console.log('✅ Mapped task assignedTo:', {
+        original: responseData.assignedTo,
+        mapped: newTask.assignedTo,
+        type: typeof newTask.assignedTo
+      });
+      
+      console.log('📝 Adding task to state:', newTask);
+      console.log('📊 Current tasks count before add:', data.tasks.length);
+      
+      // Add task to state
+      setData(prev => {
+        const updatedTasks = [...prev.tasks, newTask];
+        console.log('📊 Updated tasks count after add:', updatedTasks.length);
+        return { ...prev, tasks: updatedTasks };
+      });
+      
+      // Create notification for the assigned user
+      const assignedUserId = newTask.assignedTo;
+      const createdByName = newTask.createdByName || 'System';
+      const createdByRole = newTask.createdByRole || '';
+      const roleLabel = createdByRole ? ` (${createdByRole.charAt(0).toUpperCase() + createdByRole.slice(1)})` : '';
+      
+      if (assignedUserId) {
+        addNotification({
+          title: 'New Task Assigned',
+          message: `Task "${newTask.title}" is assigned from ${createdByName}${roleLabel}`,
+          type: 'info',
+          read: false,
+          userId: assignedUserId.toString()
+        });
+      }
+      
+      return newTask; // Return the created task
     } catch (error) {
-      console.error('Failed to create task:', error);
-      // Fallback to localStorage if API fails
-      const newTask: Task = {
-        ...task,
-        id: generateId(),
-        attachments: task.attachments || [],
-        createdAt: formatDate(new Date()),
-        updatedAt: formatDate(new Date()),
-        comments: []
-      };
-      setData(prev => ({ ...prev, tasks: [...prev.tasks, newTask] }));
+      console.error('❌ Failed to create task:', error);
+      toast.error('Failed to create task. Please try again.');
+      throw error; // Re-throw so TaskForm can handle it
     }
   };
 
@@ -553,11 +600,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const deleteTask = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      tasks: prev.tasks.filter(t => t.id !== id)
-    }));
+  const deleteTask = async (id: string) => {
+    try {
+      // Call API to delete from database
+      await apiService.deleteTask(id);
+      
+      // Remove from local state
+      setData(prev => ({
+        ...prev,
+        tasks: prev.tasks.filter(t => t.id !== id)
+      }));
+      
+      // Show success message
+      toast.success('Task deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      toast.error('Failed to delete task. Please try again.');
+      // Don't remove from local state if API call failed
+    }
   };
 
   const addTaskComment = (taskId: string, comment: Omit<Comment, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -1326,6 +1386,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
+  const clearAllNotifications = () => {
+    setData(prev => ({
+      ...prev,
+      notifications: prev.notifications.map(n => ({ ...n, read: true }))
+    }));
+  };
+
   // Dashboard stats
   const getDashboardStats = (): DashboardStats => {
     const now = new Date();
@@ -1422,8 +1489,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addNotification,
     markNotificationAsRead,
     deleteNotification,
+    clearAllNotifications,
     getDashboardStats
   };
+
+  // Expose addNotification to AuthContext
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__dataContextAddNotification = addNotification;
+    }
+  }, []);
 
   return (
     <DataContext.Provider value={value}>

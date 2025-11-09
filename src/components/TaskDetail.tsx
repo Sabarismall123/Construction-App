@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Calendar, User, MessageSquare, Paperclip, Send, Download, Image, File, Eye } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Calendar, Paperclip, Download, Image, File, Eye } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Task } from '@/types';
 import { formatDate } from '@/utils';
 import { TASK_STATUSES, PRIORITIES } from '@/constants';
@@ -10,13 +11,19 @@ import { apiService } from '@/services/api';
 interface TaskDetailProps {
   task: Task;
   onClose: () => void;
+  onTaskUpdate?: () => void; // Callback to refresh task data
 }
 
-const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
-  const { addTaskComment, projects } = useData();
+const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onTaskUpdate }) => {
+  const { addTaskComment, updateTask, projects, users, addNotification } = useData();
+  const { user: currentUser } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [storedFiles, setStoredFiles] = useState<any[]>([]);
+  const [taskStatus, setTaskStatus] = useState(task.status);
+  const [taskPriority, setTaskPriority] = useState(task.priority);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const project = projects.find(p => p.id === task.projectId);
 
@@ -33,10 +40,10 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
         // Check if attachments are already populated objects or just IDs
         const firstAttachment = task.attachments[0];
         
-        if (typeof firstAttachment === 'object' && firstAttachment._id) {
+        if (typeof firstAttachment === 'object' && (firstAttachment as any)._id) {
           // Attachments are already populated objects from backend
           console.log('✅ Attachments are already populated objects');
-          const files = task.attachments.map(attachment => ({
+          const files = task.attachments.map((attachment: any) => ({
             id: attachment._id,
             originalName: attachment.originalName,
             mimetype: attachment.mimetype,
@@ -72,15 +79,6 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
     loadFiles();
   }, [task.attachments, task.id]);
 
-  const getStatusColor = (status: string) => {
-    const statusConfig = TASK_STATUSES.find(s => s.value === status);
-    return statusConfig?.color || 'bg-gray-100 text-gray-800';
-  };
-
-  const getPriorityColor = (priority: string) => {
-    const priorityConfig = PRIORITIES.find(p => p.value === priority);
-    return priorityConfig?.color || 'bg-gray-100 text-gray-800';
-  };
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,8 +90,8 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
     try {
       await addTaskComment(task.id, {
         content: newComment.trim(),
-        author: 'current-user',
-        authorName: 'Current User'
+        author: currentUser?.id || 'current-user',
+        authorName: currentUser?.name || 'Current User'
       });
       
       setNewComment('');
@@ -103,6 +101,85 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
     } finally {
       setIsSubmittingComment(false);
     }
+  };
+
+  // Handle status change
+  const handleStatusChange = async (newStatus: string) => {
+    setIsUpdatingStatus(true);
+    try {
+      await updateTask(task.id, { status: newStatus as any });
+      setTaskStatus(newStatus as any);
+      
+      // If status changed to completed, send notification to assigned user
+      if (newStatus === 'completed') {
+        const assignedUser = users.find(u => u.id === task.assignedTo);
+        if (assignedUser) {
+          addNotification({
+            title: 'Task Completed',
+            message: `Task "${task.title}" has been marked as completed by ${currentUser?.name || 'System'}`,
+            type: 'success',
+            read: false,
+            userId: assignedUser.id
+          });
+          toast.success(`Notification sent to ${assignedUser.name}`);
+        }
+      }
+      
+      toast.success('Task status updated successfully');
+    } catch (error) {
+      toast.error('Failed to update task status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  // Handle priority change
+  const handlePriorityChange = async (newPriority: string) => {
+    try {
+      await updateTask(task.id, { priority: newPriority as any });
+      setTaskPriority(newPriority as any);
+      toast.success('Task priority updated successfully');
+    } catch (error) {
+      toast.error('Failed to update task priority');
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      
+      try {
+        // Upload files
+        for (const file of files) {
+          await apiService.uploadFile(file, task.id, task.projectId);
+        }
+        
+        toast.success(`${files.length} file(s) uploaded successfully`);
+        // Refresh task data to show new attachments
+        if (onTaskUpdate) {
+          onTaskUpdate();
+        } else {
+          // Fallback: reload page if no callback provided
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('File upload error:', error);
+        toast.error('Failed to upload files');
+      } finally {
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    }
+  };
+
+  // Handle add attachment button click
+  const handleAddAttachmentClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -128,9 +205,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* Description */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-600">{task.description}</p>
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium text-gray-900">Description</h3>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <p className="text-gray-700 leading-relaxed text-base whitespace-pre-wrap">{task.description}</p>
+                </div>
               </div>
 
               {/* Attachments */}
@@ -140,7 +219,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {task.attachments.map((attachment, index) => {
                       // Handle both populated objects and ID strings
-                      const attachmentId = typeof attachment === 'object' ? attachment._id : attachment;
+                      const attachmentId = typeof attachment === 'object' ? (attachment as any)._id : attachment;
                       const storedFile = storedFiles.find(f => f.id === attachmentId);
                       const isImage = storedFile?.mimetype?.startsWith('image/');
                       const isPdf = storedFile?.mimetype === 'application/pdf';
@@ -245,55 +324,61 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
               )}
 
               {/* Comments */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Comments</h3>
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Comments</h3>
                 
                 {/* Add Comment Form */}
                 <form onSubmit={handleAddComment} className="mb-4">
-                  <div className="flex space-x-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddAttachmentClick}
+                      className="h-9 w-9 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-300 flex-shrink-0 transition-colors flex items-center justify-center"
+                      title="Add attachment"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                    </button>
                     <input
                       type="text"
-                      placeholder="Add a comment..."
-                      className="input flex-1"
+                      placeholder="Add a comment... (Press Enter to send)"
+                      className="input flex-1 h-9 py-2 px-3 text-sm min-w-0"
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
+                      disabled={isSubmittingComment}
                     />
-                    <button
-                      type="submit"
-                      disabled={!newComment.trim() || isSubmittingComment}
-                      className="btn-primary"
-                    >
-                      {isSubmittingComment ? (
-                        <div className="loading-spinner h-4 w-4"></div>
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                      onChange={handleFileUpload}
+                    />
                   </div>
                 </form>
 
                 {/* Comments List */}
                 <div className="space-y-4">
                   {task.comments.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No comments yet</p>
+                    <p className="text-gray-500 text-sm text-center py-4">No comments yet</p>
                   ) : (
                     task.comments.map((comment) => (
-                      <div key={comment.id} className="flex space-x-3">
-                        <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
+                      <div key={comment.id} className="flex gap-3">
+                        <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                           <span className="text-xs font-medium text-gray-600">
-                            {comment.authorName.charAt(0)}
+                            {comment.authorName?.charAt(0)?.toUpperCase() || '?'}
                           </span>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
                             <span className="text-sm font-medium text-gray-900">
-                              {comment.authorName}
+                              {comment.authorName || 'Unknown'}
                             </span>
                             <span className="text-xs text-gray-500">
                               {formatDate(comment.createdAt, 'MMM dd, yyyy HH:mm')}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{comment.content}</p>
+                          <p className="text-sm text-gray-600 leading-relaxed">{comment.content}</p>
                         </div>
                       </div>
                     ))
@@ -310,59 +395,83 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
                   <h3 className="text-lg font-medium text-gray-900">Task Details</h3>
                 </div>
                 <div className="card-body space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Status</label>
-                    <div className="mt-1">
-                      <span className={`status-badge ${getStatusColor(task.status)}`}>
-                        {TASK_STATUSES.find(s => s.value === task.status)?.label}
-                      </span>
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                    <select
+                      value={taskStatus}
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                      disabled={isUpdatingStatus}
+                      className="input w-full text-sm py-2 px-3 h-10"
+                    >
+                      {TASK_STATUSES.map((status) => (
+                        <option key={status.value} value={status.value}>
+                          {status.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Priority</label>
+                    <select
+                      value={taskPriority}
+                      onChange={(e) => handlePriorityChange(e.target.value)}
+                      className="input w-full text-sm py-2 px-3 h-10"
+                    >
+                      {PRIORITIES.map((priority) => (
+                        <option key={priority.value} value={priority.value}>
+                          {priority.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Assigned To</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      {(() => {
+                        const assignedUser = users.find(u => u.id === task.assignedTo);
+                        const userName = assignedUser?.name || 'Unassigned';
+                        const initial = userName.charAt(0).toUpperCase();
+                        return (
+                          <>
+                            <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-medium text-gray-600">
+                                {initial}
+                              </span>
+                            </div>
+                            <span className="text-sm text-gray-900 truncate">
+                              {userName}
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Priority</label>
-                    <div className="mt-1">
-                      <span className={`priority-badge ${getPriorityColor(task.priority)}`}>
-                        {PRIORITIES.find(p => p.value === task.priority)?.label}
-                      </span>
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
+                    <div className="flex items-center gap-2 text-sm text-gray-900 mt-1">
+                      <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span>{formatDate(task.dueDate)}</span>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Assigned To</label>
-                    <div className="mt-1 flex items-center">
-                      <div className="h-6 w-6 bg-gray-300 rounded-full flex items-center justify-center mr-2">
-                        <span className="text-xs font-medium text-gray-600">
-                          {task.assignedTo.charAt(0)}
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-900">{task.assignedTo}</span>
-                    </div>
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Project</label>
+                    <div className="text-sm text-gray-900 mt-1">{project?.name || 'No project'}</div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Due Date</label>
-                    <div className="mt-1 flex items-center text-sm text-gray-900">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {formatDate(task.dueDate)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Project</label>
-                    <div className="mt-1 text-sm text-gray-900">{project?.name}</div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Created</label>
-                    <div className="mt-1 text-sm text-gray-900">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Created</label>
+                    <div className="text-sm text-gray-900 mt-1">
                       {formatDate(task.createdAt, 'MMM dd, yyyy')}
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Last Updated</label>
-                    <div className="mt-1 text-sm text-gray-900">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Last Updated</label>
+                    <div className="text-sm text-gray-900 mt-1">
                       {formatDate(task.updatedAt, 'MMM dd, yyyy')}
                     </div>
                   </div>
@@ -374,15 +483,23 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose }) => {
                 <div className="card-header">
                   <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
                 </div>
-                <div className="card-body space-y-2">
-                  <button className="btn-secondary w-full">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Add Comment
+                <div className="card-body">
+                  <button
+                    type="button"
+                    onClick={handleAddAttachmentClick}
+                    className="btn-secondary w-full flex items-center justify-center gap-2 py-2.5"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                    <span>Add Attachment</span>
                   </button>
-                  <button className="btn-secondary w-full">
-                    <Paperclip className="h-4 w-4 mr-2" />
-                    Add Attachment
-                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                    onChange={handleFileUpload}
+                  />
                 </div>
               </div>
             </div>

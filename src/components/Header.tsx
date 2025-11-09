@@ -15,7 +15,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, user }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const unreadNotifications = notifications.filter(n => !n.read);
+  // Filter notifications by current user
+  const userNotifications = user ? notifications.filter(n => !n.userId || n.userId === user.id) : notifications;
+  const unreadNotifications = userNotifications.filter(n => !n.read);
 
   const handleLogout = () => {
     logout();
@@ -65,12 +67,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, user }) => {
                   </div>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
-                  {notifications.length === 0 ? (
+                  {userNotifications.length === 0 ? (
                     <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                       No notifications
                     </div>
                   ) : (
-                    notifications.map((notification) => (
+                    userNotifications.map((notification) => (
                       <div
                         key={notification.id}
                         className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${
