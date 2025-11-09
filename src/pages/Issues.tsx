@@ -9,7 +9,7 @@ import IssueDetail from '@/components/IssueDetail';
 import MobileDropdown from '@/components/MobileDropdown';
 
 const Issues: React.FC = () => {
-  const { issues, projects, deleteIssue } = useData();
+  const { issues, projects, users, deleteIssue } = useData();
   const { hasRole } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -70,6 +70,21 @@ const Issues: React.FC = () => {
     return project?.name || 'Unknown Project';
   };
 
+  const getUserName = (assignedTo: any) => {
+    if (!assignedTo) return 'Unassigned';
+    
+    // Handle different types of assignedTo (string, object, etc.)
+    const assignedToId = typeof assignedTo === 'string' 
+      ? assignedTo 
+      : (assignedTo._id ? assignedTo._id.toString() : assignedTo.toString());
+    
+    const user = users.find(u => {
+      const userId = u.id?.toString() || u._id?.toString() || u.id;
+      return userId === assignedToId || userId === assignedTo?.toString();
+    });
+    return user?.name || 'Unknown User';
+  };
+
   return (
     <div className="mobile-content w-full px-4 py-4 space-y-4">
       {/* Header */}
@@ -81,15 +96,17 @@ const Issues: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-col space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-2">
-          {hasRole(['admin', 'manager', 'site_supervisor']) && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
-            >
-              <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
-              Add Issue
-            </button>
-          )}
+          {/* Allow all users including employees to add issues */}
+          <button
+            onClick={() => {
+              setEditingIssue(null);
+              setShowForm(true);
+            }}
+            className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
+            Add Issue
+          </button>
         </div>
       </div>
 
@@ -213,12 +230,23 @@ const Issues: React.FC = () => {
                 <div className="flex items-center text-sm text-gray-500">
                   <span className="font-medium text-gray-700 mr-2">Assigned:</span>
                   <div className="flex items-center">
-                    <div className="h-5 w-5 bg-gray-300 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                      <span className="text-xs font-medium text-gray-600">
-                        {issue.assignedTo?.charAt(0) || 'U'}
-                      </span>
-                    </div>
-                    <span className="truncate">User {issue.assignedTo}</span>
+                    {issue.assignedTo ? (
+                      <>
+                        <div className="h-5 w-5 bg-gray-300 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                          <span className="text-xs font-medium text-gray-600">
+                            {getUserName(issue.assignedTo)?.charAt(0)?.toUpperCase() || 'U'}
+                          </span>
+                        </div>
+                        <span className="truncate">{getUserName(issue.assignedTo)}</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="h-5 w-5 bg-gray-200 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                          <span className="text-xs font-medium text-gray-500">-</span>
+                        </div>
+                        <span className="truncate text-gray-400 italic">Unassigned</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center text-sm text-gray-500">

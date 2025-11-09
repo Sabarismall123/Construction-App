@@ -143,36 +143,129 @@ class PhotoService {
         ctx?.drawImage(img, 0, 0);
 
         if (ctx) {
-          // Add overlay background
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-          ctx.fillRect(10, canvas.height - 80, canvas.width - 20, 70);
+          // Calculate overlay height based on content
+          const overlayHeight = 90;
+          const overlayY = canvas.height - overlayHeight - 10;
+          
+          // Add overlay background with better visibility
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.fillRect(10, overlayY, canvas.width - 20, overlayHeight);
 
-          // Add timestamp
-          const timestamp = new Date(photo.timestamp).toLocaleString();
+          // Add timestamp with date and time
+          const now = new Date(photo.timestamp);
+          const dateStr = now.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          });
+          const timeStr = now.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: true 
+          });
+          
           ctx.fillStyle = 'white';
-          ctx.font = '16px Arial';
-          ctx.fillText(`📅 ${timestamp}`, 20, canvas.height - 50);
+          ctx.font = 'bold 18px Arial';
+          ctx.fillText(`📅 Date: ${dateStr}`, 20, overlayY + 25);
+          ctx.fillText(`🕐 Time: ${timeStr}`, 20, overlayY + 50);
 
           // Add location if available
           if (photo.address) {
-            ctx.fillText(`📍 ${photo.address}`, 20, canvas.height - 30);
+            ctx.font = '14px Arial';
+            ctx.fillText(`📍 ${photo.address.substring(0, 50)}${photo.address.length > 50 ? '...' : ''}`, 20, overlayY + 75);
           } else if (photo.location) {
+            ctx.font = '14px Arial';
             ctx.fillText(
-              `📍 ${photo.location.latitude.toFixed(6)}, ${photo.location.longitude.toFixed(6)}`, 
+              `📍 Lat: ${photo.location.latitude.toFixed(6)}, Lng: ${photo.location.longitude.toFixed(6)}`, 
               20, 
-              canvas.height - 30
+              overlayY + 75
             );
           }
 
           // Add project info if available
           if (photo.projectId) {
-            ctx.fillText(`🏗️ Project: ${photo.projectId}`, 20, canvas.height - 10);
+            ctx.font = '14px Arial';
+            ctx.fillText(`🏗️ Project ID: ${photo.projectId}`, 20, overlayY + 90);
           }
         }
 
         // Convert to data URL
         const overlayImage = canvas.toDataURL('image/jpeg', 0.9);
         resolve(overlayImage);
+      };
+
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(photo.file);
+    });
+  }
+
+  // Add date/time watermark to photo file and return as File
+  async addDateTimeWatermark(photo: PhotoMetadata): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Draw original image
+        ctx?.drawImage(img, 0, 0);
+
+        if (ctx) {
+          // Calculate overlay height based on content
+          const overlayHeight = 90;
+          const overlayY = canvas.height - overlayHeight - 10;
+          
+          // Add overlay background with better visibility
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.fillRect(10, overlayY, canvas.width - 20, overlayHeight);
+
+          // Add timestamp with date and time
+          const now = new Date(photo.timestamp);
+          const dateStr = now.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          });
+          const timeStr = now.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: true 
+          });
+          
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 18px Arial';
+          ctx.fillText(`📅 Date: ${dateStr}`, 20, overlayY + 25);
+          ctx.fillText(`🕐 Time: ${timeStr}`, 20, overlayY + 50);
+
+          // Add location if available
+          if (photo.address) {
+            ctx.font = '14px Arial';
+            ctx.fillText(`📍 ${photo.address.substring(0, 50)}${photo.address.length > 50 ? '...' : ''}`, 20, overlayY + 75);
+          } else if (photo.location) {
+            ctx.font = '14px Arial';
+            ctx.fillText(
+              `📍 Lat: ${photo.location.latitude.toFixed(6)}, Lng: ${photo.location.longitude.toFixed(6)}`, 
+              20, 
+              overlayY + 75
+            );
+          }
+        }
+
+        // Convert canvas to blob and create File
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const fileName = `attendance_${Date.now()}.jpg`;
+            const watermarkedFile = new File([blob], fileName, { type: 'image/jpeg' });
+            resolve(watermarkedFile);
+          } else {
+            reject(new Error('Failed to create watermarked image'));
+          }
+        }, 'image/jpeg', 0.9);
       };
 
       img.onerror = () => reject(new Error('Failed to load image'));

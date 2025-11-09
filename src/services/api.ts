@@ -484,6 +484,39 @@ class ApiService {
     return this.request(`/attendance/project/${projectId}`);
   }
 
+  // Labour endpoints
+  async getLabours() {
+    return this.request('/labours');
+  }
+
+  async getLabour(id: string) {
+    return this.request(`/labours/${id}`);
+  }
+
+  async createLabour(labour: any) {
+    return this.request('/labours', {
+      method: 'POST',
+      body: JSON.stringify(labour),
+    });
+  }
+
+  async updateLabour(id: string, labour: any) {
+    return this.request(`/labours/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(labour),
+    });
+  }
+
+  async deleteLabour(id: string) {
+    return this.request(`/labours/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getLaboursByProject(projectId: string) {
+    return this.request(`/labours/project/${projectId}`);
+  }
+
   // File upload methods
   async uploadFile(file: File, taskId?: string, projectId?: string, issueId?: string): Promise<any> {
     const formData = new FormData();

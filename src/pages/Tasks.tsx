@@ -48,7 +48,12 @@ const Tasks: React.FC = () => {
   };
 
   const handleView = (task: any) => {
-    setSelectedTask(task);
+    // Ensure task has comments and attachments initialized
+    setSelectedTask({
+      ...task,
+      comments: task.comments || [],
+      attachments: task.attachments || []
+    });
     setShowDetail(true);
   };
 
@@ -86,7 +91,8 @@ const Tasks: React.FC = () => {
             id: updatedTask._id || updatedTask.id,
             projectId: updatedTask.projectId?._id || updatedTask.projectId || updatedTask.projectId,
             assignedTo: updatedTask.assignedTo?._id || updatedTask.assignedTo || updatedTask.assignedTo,
-            attachments: updatedTask.attachments || []
+            attachments: updatedTask.attachments || [],
+            comments: updatedTask.comments || []
           });
         }
       }
@@ -196,46 +202,46 @@ const Tasks: React.FC = () => {
             </div>
             <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
               <div className="lg:w-auto lg:min-w-[180px]">
-                <MobileDropdown
-                  options={[
-                    { value: '', label: 'All Statuses' },
-                    ...TASK_STATUSES.map(status => ({
-                      value: status.value,
-                      label: status.label
-                    }))
-                  ]}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  placeholder="All Statuses"
-                />
-              </div>
+              <MobileDropdown
+                options={[
+                  { value: '', label: 'All Statuses' },
+                  ...TASK_STATUSES.map(status => ({
+                    value: status.value,
+                    label: status.label
+                  }))
+                ]}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                placeholder="All Statuses"
+              />
+            </div>
               <div className="lg:w-auto lg:min-w-[180px]">
-                <MobileDropdown
-                  options={[
-                    { value: '', label: 'All Priorities' },
-                    ...PRIORITIES.map(priority => ({
-                      value: priority.value,
-                      label: priority.label
-                    }))
-                  ]}
-                  value={priorityFilter}
-                  onChange={setPriorityFilter}
-                  placeholder="All Priorities"
-                />
-              </div>
+              <MobileDropdown
+                options={[
+                  { value: '', label: 'All Priorities' },
+                  ...PRIORITIES.map(priority => ({
+                    value: priority.value,
+                    label: priority.label
+                  }))
+                ]}
+                value={priorityFilter}
+                onChange={setPriorityFilter}
+                placeholder="All Priorities"
+              />
+            </div>
               <div className="lg:w-auto lg:min-w-[180px]">
-                <MobileDropdown
-                  options={[
-                    { value: '', label: 'All Projects' },
-                    ...projects.map(project => ({
-                      value: project.id,
-                      label: project.name
-                    }))
-                  ]}
-                  value={projectFilter}
-                  onChange={setProjectFilter}
-                  placeholder="All Projects"
-                />
+              <MobileDropdown
+                options={[
+                  { value: '', label: 'All Projects' },
+                  ...projects.map(project => ({
+                    value: project.id,
+                    label: project.name
+                  }))
+                ]}
+                value={projectFilter}
+                onChange={setProjectFilter}
+                placeholder="All Projects"
+              />
               </div>
             </div>
           </div>

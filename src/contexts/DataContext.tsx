@@ -35,7 +35,7 @@ interface DataContextType {
   addTaskComment: (taskId: string, comment: Omit<Comment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   
   addIssue: (issue: Omit<Issue, 'id' | 'createdAt' | 'updatedAt' | 'comments'>) => void;
-  updateIssue: (id: string, issue: Partial<Issue>) => void;
+  updateIssue: (id: string, issue: Partial<Issue>) => Promise<void>;
   deleteIssue: (id: string) => void;
   addIssueComment: (issueId: string, comment: Omit<Comment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   
@@ -117,7 +117,7 @@ const generateEmptyData = (): DataContextType => {
     
     // Issue actions
     addIssue: () => {},
-    updateIssue: () => {},
+    updateIssue: async () => {},
     deleteIssue: () => {},
     addIssueComment: () => {},
     
@@ -285,14 +285,38 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             updatedAt: new Date(i.updatedAt || Date.now()),
             comments: i.comments || []
           })),
-          attendance: attendance.map((a: any) => ({
-            ...a,
-            id: a._id || a.id,
-            projectId: a.projectId?._id || a.projectId || a.projectId,
-            employeeId: a.employeeId?._id || a.employeeId || a.employeeId,
-            createdAt: new Date(a.createdAt || Date.now()),
-            updatedAt: new Date(a.updatedAt || Date.now())
-          })),
+          attendance: attendance.map((a: any) => {
+            const projectId = a.projectId?._id || a.projectId || a.projectId;
+            const project = Array.isArray(projects) ? projects.find((p: any) => 
+              ((p._id || p.id)?.toString()) === (projectId?.toString())
+            ) : null;
+            
+            // Map attachments - handle both populated objects and IDs
+            const mappedAttachments = (a.attachments || []).map((attachment: any) => {
+              if (typeof attachment === 'object' && (attachment._id || attachment.id)) {
+                // Attachment is a populated object, return the ID
+                return attachment._id || attachment.id;
+              } else if (typeof attachment === 'string') {
+                // Attachment is already an ID string
+                return attachment;
+              }
+              return attachment;
+            });
+            
+            return {
+              ...a,
+              id: a._id || a.id,
+              projectId: projectId,
+              projectName: a.projectName || a.projectId?.name || project?.name || 'Unknown Project',
+              employeeId: a.employeeId?._id || a.employeeId || a.employeeId,
+              employeeName: a.employeeName || a.employeeId?.name || '',
+              mobileNumber: a.mobileNumber || a.employeeId?.mobileNumber || '',
+              labourType: a.labourType || '',
+              attachments: mappedAttachments, // Map attachments to IDs
+              createdAt: new Date(a.createdAt || Date.now()),
+              updatedAt: new Date(a.updatedAt || Date.now())
+            };
+          }),
           resources: resources.map((r: any) => ({
             ...r,
             id: r._id || r.id,
@@ -577,24 +601,44 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateTask = async (id: string, task: Partial<Task>) => {
     try {
       const response = await apiService.updateTask(id, task);
+      const responseData = (response as any).data || response;
+      
+      // Properly map the response to ensure assignedTo is preserved
+      const updatedTask = {
+        ...responseData,
+        id: responseData._id || responseData.id || id,
+        projectId: responseData.projectId?._id || responseData.projectId || task.projectId,
+        // Ensure assignedTo is properly extracted and converted to string
+        assignedTo: (responseData.assignedTo?._id || responseData.assignedTo || task.assignedTo)?.toString(),
+        createdBy: responseData.createdBy?._id || responseData.createdBy || task.createdBy,
+        createdByName: responseData.createdByName || responseData.createdBy?.name || task.createdByName,
+        createdByRole: responseData.createdByRole || responseData.createdBy?.role || task.createdByRole,
+        attachments: responseData.attachments || task.attachments || [],
+        comments: responseData.comments || task.comments || [],
+        updatedAt: formatDate(new Date())
+      };
+      
+      setData(prev => ({
+        ...prev,
+        tasks: prev.tasks.map(t => 
+          t.id === id ? { ...t, ...updatedTask } : t
+        )
+      }));
+      
+      console.log('✅ Task updated successfully:', updatedTask);
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      toast.error('Failed to update task. Please try again.');
+      // Fallback to localStorage if API fails
       setData(prev => ({
         ...prev,
         tasks: prev.tasks.map(t => 
           t.id === id ? { 
             ...t, 
-            ...(response as any).data, 
-            attachments: (response as any).data.attachments || t.attachments,
+            ...task, 
+            assignedTo: task.assignedTo?.toString() || t.assignedTo,
             updatedAt: formatDate(new Date()) 
           } : t
-        )
-      }));
-    } catch (error) {
-      console.error('Failed to update task:', error);
-      // Fallback to localStorage if API fails
-      setData(prev => ({
-        ...prev,
-        tasks: prev.tasks.map(t => 
-          t.id === id ? { ...t, ...task, updatedAt: formatDate(new Date()) } : t
         )
       }));
     }
@@ -637,18 +681,83 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
+  // Helper function to notify all managers
+  const notifyAllManagers = (title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+    const managers = data.users.filter(u => u.role === 'manager' || u.role === 'admin');
+    managers.forEach(manager => {
+      addNotification({
+        title: title,
+        message: message,
+        type: type,
+        read: false,
+        userId: manager.id
+      });
+    });
+    console.log(`✅ Notifications sent to ${managers.length} manager(s): ${message}`);
+  };
+
   // Issue actions
   const addIssue = async (issue: Omit<Issue, 'id' | 'createdAt' | 'updatedAt' | 'comments'>) => {
     try {
       const response = await apiService.createIssue(issue);
+      const responseData = (response as any).data || response;
+      
       const newIssue: Issue = {
-        ...(response as any).data,
-        id: (response as any).data._id || (response as any).data.id,
+        ...responseData,
+        id: responseData._id || responseData.id,
+        projectId: responseData.projectId?._id || responseData.projectId || issue.projectId,
+        assignedTo: (responseData.assignedTo?._id || responseData.assignedTo || issue.assignedTo)?.toString(),
+        reportedBy: responseData.reportedBy?._id || responseData.reportedBy || issue.reportedBy,
+        reportedByName: responseData.reportedByName || responseData.reportedBy?.name || 'System',
+        dueDate: responseData.dueDate ? new Date(responseData.dueDate) : (issue.dueDate ? new Date(issue.dueDate) : new Date()),
         createdAt: formatDate(new Date()),
         updatedAt: formatDate(new Date()),
         comments: []
       };
       setData(prev => ({ ...prev, issues: [...prev.issues, newIssue] }));
+      
+      // Notify all managers when an issue is created (especially by employees)
+      const issueWithReporter = responseData || issue;
+      const reporterName = issueWithReporter.reportedByName || issueWithReporter.reportedBy?.name || 'An employee';
+      const projectName = data.projects.find(p => p.id === issue.projectId)?.name || 'a project';
+      notifyAllManagers(
+        'New Issue Reported',
+        `${reporterName} reported a new issue: "${issue.title}" in project "${projectName}"`,
+        'warning'
+      );
+      
+      // If issue is assigned to a user, notify that user
+      const assignedToId = newIssue.assignedTo?.toString();
+      if (assignedToId) {
+        const assignedUser = data.users.find(u => {
+          const userId = u.id?.toString() || u._id?.toString() || u.id;
+          return userId === assignedToId;
+        });
+        
+        if (assignedUser) {
+          // Ensure userId is a string for consistent comparison
+          const userId = assignedUser.id?.toString() || (assignedUser as any)._id?.toString() || assignedUser.id;
+          
+          addNotification({
+            title: 'New Issue Assigned',
+            message: `Issue "${issue.title}" has been assigned to you in project "${projectName}"`,
+            type: 'info',
+            read: false,
+            userId: userId
+          });
+          console.log(`✅ Notification sent to ${assignedUser.name} (ID: ${userId}): Issue assigned`);
+        } else {
+          // If user not found, still send notification with the ID
+          addNotification({
+            title: 'New Issue Assigned',
+            message: `Issue "${issue.title}" has been assigned to you in project "${projectName}"`,
+            type: 'info',
+            read: false,
+            userId: assignedToId
+          });
+          console.log(`✅ Notification sent to user (ID: ${assignedToId}): Issue assigned`);
+        }
+      }
     } catch (error) {
       console.error('Failed to create issue:', error);
       // Fallback to localStorage if API fails
@@ -660,16 +769,194 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         comments: []
       };
       setData(prev => ({ ...prev, issues: [...prev.issues, newIssue] }));
+      
+      // Notify managers even if API fails
+      const projectName = data.projects.find(p => p.id === issue.projectId)?.name || 'a project';
+      notifyAllManagers(
+        'New Issue Reported',
+        `An employee reported a new issue: "${issue.title}" in project "${projectName}"`,
+        'warning'
+      );
+      
+      // If issue is assigned to a user, notify that user (even if API fails)
+      const assignedToId = issue.assignedTo?.toString();
+      if (assignedToId) {
+        const assignedUser = data.users.find(u => {
+          const userId = u.id?.toString() || u._id?.toString() || u.id;
+          return userId === assignedToId;
+        });
+        
+        if (assignedUser) {
+          // Ensure userId is a string for consistent comparison
+          const userId = assignedUser.id?.toString() || (assignedUser as any)._id?.toString() || assignedUser.id;
+          
+          addNotification({
+            title: 'New Issue Assigned',
+            message: `Issue "${issue.title}" has been assigned to you in project "${projectName}"`,
+            type: 'info',
+            read: false,
+            userId: userId
+          });
+          console.log(`✅ Notification sent to ${assignedUser.name} (ID: ${userId}): Issue assigned (fallback)`);
+        } else {
+          addNotification({
+            title: 'New Issue Assigned',
+            message: `Issue "${issue.title}" has been assigned to you in project "${projectName}"`,
+            type: 'info',
+            read: false,
+            userId: assignedToId
+          });
+          console.log(`✅ Notification sent to user (ID: ${assignedToId}): Issue assigned (fallback)`);
+        }
+      }
     }
   };
 
-  const updateIssue = (id: string, issue: Partial<Issue>) => {
-    setData(prev => ({
-      ...prev,
-      issues: prev.issues.map(i => 
-        i.id === id ? { ...i, ...issue, updatedAt: formatDate(new Date()) } : i
-      )
-    }));
+  const updateIssue = async (id: string, issue: Partial<Issue>) => {
+    try {
+      // Get the current issue to check if assignedTo changed
+      const currentIssue = data.issues.find(i => i.id === id);
+      const oldAssignedTo = currentIssue?.assignedTo;
+      const newAssignedTo = issue.assignedTo;
+      
+      const response = await apiService.updateIssue(id, issue);
+      const responseData = (response as any).data || response;
+      
+      // Properly map the response to ensure assignedTo is preserved
+      const updatedIssue = {
+        ...responseData,
+        id: responseData._id || responseData.id || id,
+        projectId: responseData.projectId?._id || responseData.projectId || issue.projectId,
+        // Ensure assignedTo is properly extracted and converted to string
+        assignedTo: (responseData.assignedTo?._id || responseData.assignedTo || issue.assignedTo)?.toString(),
+        reportedBy: responseData.reportedBy?._id || responseData.reportedBy || issue.reportedBy,
+        reportedByName: responseData.reportedByName || responseData.reportedBy?.name || issue.reportedByName,
+        attachments: responseData.attachments || issue.attachments || [],
+        comments: responseData.comments || issue.comments || [],
+        updatedAt: formatDate(new Date())
+      };
+      
+      setData(prev => ({
+        ...prev,
+        issues: prev.issues.map(i => 
+          i.id === id ? { ...i, ...updatedIssue } : i
+        )
+      }));
+      
+      // Check if assignedTo changed and send notification to the assigned user
+      // Normalize both old and new assignedTo to strings for comparison
+      const oldAssignedToStr = oldAssignedTo ? (
+        typeof oldAssignedTo === 'string' ? oldAssignedTo : 
+        (oldAssignedTo as any)?._id ? (oldAssignedTo as any)._id.toString() : 
+        oldAssignedTo.toString()
+      ) : '';
+      
+      const newAssignedToStr = updatedIssue.assignedTo ? (
+        typeof updatedIssue.assignedTo === 'string' ? updatedIssue.assignedTo :
+        (updatedIssue.assignedTo as any)?._id ? (updatedIssue.assignedTo as any)._id.toString() :
+        updatedIssue.assignedTo.toString()
+      ) : '';
+      
+      console.log('🔔 Issue assignment check:', {
+        oldAssignedTo,
+        newAssignedTo: issue.assignedTo,
+        oldAssignedToStr,
+        newAssignedToStr,
+        changed: newAssignedToStr && newAssignedToStr !== oldAssignedToStr,
+        currentIssue: currentIssue?.assignedTo,
+        updatedIssueAssignedTo: updatedIssue.assignedTo
+      });
+      
+      // Send notification if:
+      // 1. New assignedTo exists and is different from old
+      // 2. OR if old was empty/null and new has a value (new assignment)
+      // Always send notification if newAssignedTo exists and is different from old
+      const shouldNotify = newAssignedToStr && (
+        !oldAssignedToStr || // New assignment (was unassigned)
+        newAssignedToStr !== oldAssignedToStr // Changed assignment
+      );
+      
+      console.log('🔔 Should notify?', {
+        shouldNotify,
+        newAssignedToStr,
+        oldAssignedToStr,
+        condition1: !oldAssignedToStr,
+        condition2: newAssignedToStr !== oldAssignedToStr
+      });
+      
+      if (shouldNotify) {
+        // Issue was assigned to a new user
+        const assignedUser = data.users.find(u => {
+          const userId = u.id?.toString() || (u as any)._id?.toString() || u.id;
+          const assignedToId = newAssignedToStr;
+          return userId === assignedToId || userId?.toString() === assignedToId?.toString();
+        });
+        
+        const issueTitle = updatedIssue.title || currentIssue?.title || 'an issue';
+        // Try to get the current user from localStorage or use reportedByName
+        let assignedByName = currentIssue?.reportedByName || 'Manager';
+        try {
+          const storedUser = localStorage.getItem('construction_user');
+          if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            assignedByName = userData.name || assignedByName;
+          }
+        } catch (e) {
+          // Ignore error, use default
+        }
+        
+        console.log('🔔 Sending issue assignment notification:', {
+          assignedUser,
+          assignedToId: newAssignedToStr,
+          issueTitle,
+          assignedByName
+        });
+        
+        if (assignedUser) {
+          // Ensure userId is a string for consistent comparison
+          const userId = assignedUser.id?.toString() || (assignedUser as any)._id?.toString() || assignedUser.id;
+          
+          addNotification({
+            title: 'New Issue Assigned',
+            message: `Issue "${issueTitle}" has been assigned to you by ${assignedByName}`,
+            type: 'info',
+            read: false,
+            userId: userId
+          });
+          
+          // Also show toast notification
+          toast.success(`Issue assigned to ${assignedUser.name}`);
+          console.log(`✅ Notification sent to ${assignedUser.name} (ID: ${userId}): Issue assigned`);
+        } else {
+          // If user not found, still send notification with the ID
+          addNotification({
+            title: 'New Issue Assigned',
+            message: `Issue "${issueTitle}" has been assigned to you by ${assignedByName}`,
+            type: 'info',
+            read: false,
+            userId: newAssignedToStr
+          });
+          console.log(`✅ Notification sent to user (ID: ${newAssignedToStr}): Issue assigned`);
+        }
+      }
+      
+      console.log('✅ Issue updated successfully:', updatedIssue);
+    } catch (error) {
+      console.error('Failed to update issue:', error);
+      toast.error('Failed to update issue. Please try again.');
+      // Fallback to localStorage if API fails
+      setData(prev => ({
+        ...prev,
+        issues: prev.issues.map(i => 
+          i.id === id ? { 
+            ...i, 
+            ...issue, 
+            assignedTo: issue.assignedTo?.toString() || i.assignedTo,
+            updatedAt: formatDate(new Date()) 
+          } : i
+        )
+      }));
+    }
   };
 
   const deleteIssue = (id: string) => {
@@ -912,13 +1199,60 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addAttendance = async (attendance: Omit<Attendance, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const response = await apiService.createAttendance(attendance);
-        const newAttendance: Attendance = {
-          ...(response as any).data,
-          id: (response as any).data._id || (response as any).data.id,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
+      const responseData = (response as any).data || response;
+      
+      // Map attachments - handle both populated objects and IDs
+      const responseAttachments = responseData.attachments || attendance.attachments || [];
+      const mappedAttachments = responseAttachments.map((attachment: any) => {
+        if (typeof attachment === 'object' && (attachment._id || attachment.id)) {
+          // Attachment is a populated object, return the ID
+          return attachment._id || attachment.id;
+        } else if (typeof attachment === 'string') {
+          // Attachment is already an ID string
+          return attachment;
+        }
+        return attachment;
+      });
+      
+      // Properly map the response to ensure projectId and projectName are preserved
+      const newAttendance: Attendance = {
+        ...responseData,
+        id: responseData._id || responseData.id,
+        projectId: responseData.projectId?._id || responseData.projectId || attendance.projectId,
+        projectName: responseData.projectName || responseData.projectId?.name || 
+                     data.projects.find(p => {
+                       const projectId = responseData.projectId?._id || responseData.projectId || attendance.projectId;
+                       return p.id === projectId || p.id === projectId?.toString();
+                     })?.name || 'Unknown Project',
+        employeeName: responseData.employeeName || attendance.employeeName,
+        mobileNumber: responseData.mobileNumber || attendance.mobileNumber,
+        labourType: responseData.labourType || attendance.labourType,
+        date: responseData.date ? new Date(responseData.date) : (attendance.date ? new Date(attendance.date) : new Date()),
+        timeIn: responseData.timeIn || attendance.timeIn,
+        timeOut: responseData.timeOut || attendance.timeOut,
+        status: responseData.status || attendance.status,
+        hours: responseData.hours || attendance.hours || 0,
+        overtimeHours: responseData.overtimeHours || attendance.overtimeHours || 0,
+        notes: responseData.notes || attendance.notes,
+        attachments: mappedAttachments, // Map attachments to IDs
+        createdAt: responseData.createdAt ? new Date(responseData.createdAt) : new Date(),
+        updatedAt: responseData.updatedAt ? new Date(responseData.updatedAt) : new Date()
+      };
+      
       setData(prev => ({ ...prev, attendance: [...prev.attendance, newAttendance] }));
+      
+      // Notify all managers when attendance is marked
+      const employeeName = attendance.employeeName || 'An employee';
+      const projectName = data.projects.find(p => p.id === attendance.projectId)?.name || 'a project';
+      const statusLabel = attendance.status === 'present' ? 'Present' : 
+                         attendance.status === 'absent' ? 'Absent' :
+                         attendance.status === 'late' ? 'Late' :
+                         attendance.status === 'half_day' ? 'Half Day' : 'Overtime';
+      notifyAllManagers(
+        'Attendance Marked',
+        `${employeeName} marked attendance as ${statusLabel} for project "${projectName}"`,
+        'info'
+      );
     } catch (error) {
       console.error('Failed to create attendance:', error);
       // Fallback to localStorage if API fails
@@ -929,6 +1263,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           updatedAt: new Date()
         };
       setData(prev => ({ ...prev, attendance: [...prev.attendance, newAttendance] }));
+      
+      // Notify managers even if API fails
+      const employeeName = attendance.employeeName || 'An employee';
+      const projectName = data.projects.find(p => p.id === attendance.projectId)?.name || 'a project';
+      const statusLabel = attendance.status === 'present' ? 'Present' : 
+                         attendance.status === 'absent' ? 'Absent' :
+                         attendance.status === 'late' ? 'Late' :
+                         attendance.status === 'half_day' ? 'Half Day' : 'Overtime';
+      notifyAllManagers(
+        'Attendance Marked',
+        `${employeeName} marked attendance as ${statusLabel} for project "${projectName}"`,
+        'info'
+      );
     }
   };
 

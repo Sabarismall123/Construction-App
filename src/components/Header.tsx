@@ -15,8 +15,14 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, user }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Filter notifications by current user
-  const userNotifications = user ? notifications.filter(n => !n.userId || n.userId === user.id) : notifications;
+  // Filter notifications by current user - normalize IDs for comparison
+  const userNotifications = user ? notifications.filter(n => {
+    if (!n.userId) return true; // Show notifications without userId (global)
+    // Normalize both IDs to strings for comparison
+    const notificationUserId = n.userId?.toString() || n.userId;
+    const currentUserId = user.id?.toString() || user.id;
+    return notificationUserId === currentUserId;
+  }) : notifications;
   const unreadNotifications = userNotifications.filter(n => !n.read);
 
   const handleLogout = () => {
