@@ -137,6 +137,7 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
       {/* Capture buttons */}
       <div className="flex space-x-2 mb-4">
         <button
+          type="button"
           onClick={handleCameraCapture}
           disabled={isCapturing || photos.length >= maxPhotos}
           className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center"
@@ -146,6 +147,7 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
         </button>
         
         <button
+          type="button"
           onClick={handleGallerySelect}
           disabled={isCapturing || photos.length >= maxPhotos}
           className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center"

@@ -24,8 +24,7 @@ const API_BASE_URL = getApiBaseUrl();
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null; // Use mock token for demo
+    const token = localStorage.getItem('construction_token'); // Use real token from login
     
     console.log('🌐 API Request:', {
       method: options.method || 'GET',
@@ -493,8 +492,7 @@ class ApiService {
     if (projectId) formData.append('projectId', projectId);
     if (issueId) formData.append('issueId', issueId);
 
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null;
+    const token = localStorage.getItem('construction_token');
     const response = await fetch(`${API_BASE_URL}/files/upload`, {
       method: 'POST',
       body: formData,
@@ -517,8 +515,7 @@ class ApiService {
     if (projectId) formData.append('projectId', projectId);
     if (issueId) formData.append('issueId', issueId);
 
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null;
+    const token = localStorage.getItem('construction_token');
     const response = await fetch(`${API_BASE_URL}/files/upload-multiple`, {
       method: 'POST',
       body: formData,
@@ -535,8 +532,7 @@ class ApiService {
   }
 
   async getFile(fileId: string): Promise<Blob> {
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null;
+    const token = localStorage.getItem('construction_token');
     const response = await fetch(`${API_BASE_URL}/files/${fileId}`, {
       headers: {
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -566,8 +562,7 @@ class ApiService {
 
   // Helper method to get file URL
   getFileUrl(fileId: string): string {
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null;
+    const token = localStorage.getItem('construction_token');
     return `${API_BASE_URL}/files/${fileId}${token ? `?token=${token}` : ''}`;
   }
 }
