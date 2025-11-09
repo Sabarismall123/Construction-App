@@ -120,15 +120,20 @@ export const createIssue = async (req: AuthRequest, res: Response, next: NextFun
     // Create a default user ID for issues created without authentication
     const defaultUserId = '68f71938bb60c36e384556f8'; // Use the test user ID
     
+    // Handle assignedTo - allow empty for employees reporting issues
+    const assignedTo = req.body.assignedTo && req.body.assignedTo.trim() !== '' 
+      ? req.body.assignedTo 
+      : null; // Leave empty for employees, manager will assign later
+    
     const issueData = {
       ...req.body,
       reportedBy: req.body.reportedBy || defaultUserId, // Use provided user or default
-      assignedTo: req.body.assignedTo || defaultUserId, // Use provided user or default
+      assignedTo: assignedTo, // Can be null for employees
       description: req.body.description || 'No description provided', // Default description if not provided
       priority: req.body.priority || 'medium', // Default priority
       status: req.body.status || 'open', // Default status
       category: req.body.category || 'other', // Default category
-      assignedToName: req.body.assignedTo || 'Unknown User', // Store the name for display
+      assignedToName: assignedTo ? (req.body.assignedToName || 'Unknown User') : 'Unassigned', // Store the name for display
       reportedByName: req.body.reportedBy || 'Unknown User' // Store the reporter name
     };
 

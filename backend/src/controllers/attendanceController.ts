@@ -38,6 +38,7 @@ export const getAttendance = async (req: AuthRequest, res: Response, next: NextF
       .populate('projectId', 'name')
       .populate('employeeId', 'name email')
       .populate('approvedBy', 'name email')
+      .populate('attachments') // Populate attachments to include file details
       .sort({ date: -1, createdAt: -1 })
       .limit(Number(limit) * 1)
       .skip((Number(page) - 1) * Number(limit));
@@ -75,7 +76,8 @@ export const getAttendanceRecord = async (req: Request, res: Response, next: Nex
     const attendance = await Attendance.findById(req.params.id)
       .populate('projectId', 'name')
       .populate('employeeId', 'name email')
-      .populate('approvedBy', 'name email');
+      .populate('approvedBy', 'name email')
+      .populate('attachments'); // Populate attachments to include file details
 
     if (!attendance) {
       res.status(404).json({
@@ -113,10 +115,47 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
     const project = await Project.findById(req.body.projectId);
     const projectName = project ? project.name : 'Unknown Project';
 
+    const attendanceDate = req.body.date ? new Date(req.body.date) : new Date();
+    // Normalize date to start of day for comparison
+    const normalizedDate = new Date(attendanceDate);
+    normalizedDate.setHours(0, 0, 0, 0);
+
+    // Check for duplicate attendance record
+    // For labour records (no employeeId), check by employeeName + date + projectId
+    // For employee records (with employeeId), check by employeeId + date
+    const duplicateQuery: any = {
+      date: {
+        $gte: new Date(normalizedDate),
+        $lt: new Date(new Date(normalizedDate).setDate(normalizedDate.getDate() + 1))
+      }
+    };
+
+    if (req.body.employeeId) {
+      // Employee record - check by employeeId + date
+      duplicateQuery.employeeId = new mongoose.Types.ObjectId(req.body.employeeId);
+    } else {
+      // Labour record - check by employeeName + date + projectId
+      duplicateQuery.employeeId = null;
+      duplicateQuery.employeeName = req.body.employeeName?.trim();
+      duplicateQuery.projectId = new mongoose.Types.ObjectId(req.body.projectId);
+    }
+
+    const existingAttendance = await Attendance.findOne(duplicateQuery);
+    if (existingAttendance) {
+      res.status(400).json({
+        success: false,
+        error: 'Duplicate attendance record',
+        message: req.body.employeeId 
+          ? 'Attendance for this employee on this date already exists'
+          : `Attendance for "${req.body.employeeName}" on this date in this project already exists. Please update the existing record instead.`
+      });
+      return;
+    }
+
     const attendanceData = {
       ...req.body,
       projectName: projectName,
-      date: req.body.date ? new Date(req.body.date) : new Date(),
+      date: attendanceDate,
       status: req.body.status || 'present',
       hours: req.body.hours || 0,
       isApproved: false
@@ -127,7 +166,8 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
     const populatedAttendance = await Attendance.findById(attendance._id)
       .populate('projectId', 'name')
       .populate('employeeId', 'name email')
-      .populate('approvedBy', 'name email');
+      .populate('approvedBy', 'name email')
+      .populate('attachments'); // Populate attachments to include file details
 
     res.status(201).json({
       success: true,
@@ -167,7 +207,8 @@ export const updateAttendance = async (req: Request, res: Response, next: NextFu
       { new: true, runValidators: true }
     ).populate('projectId', 'name')
      .populate('employeeId', 'name email')
-     .populate('approvedBy', 'name email');
+     .populate('approvedBy', 'name email')
+     .populate('attachments'); // Populate attachments to include file details
 
     if (!attendance) {
       res.status(404).json({

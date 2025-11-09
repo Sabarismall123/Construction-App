@@ -23,6 +23,7 @@ import inventoryRoutes from './routes/inventory';
 import materialIssuesRoutes from './routes/materialIssues';
 import materialReturnsRoutes from './routes/materialReturns';
 import materialConsumptionsRoutes from './routes/materialConsumptions';
+import labourRoutes from './routes/labours';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -134,6 +135,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/material-issues', materialIssuesRoutes);
 app.use('/api/material-returns', materialReturnsRoutes);
 app.use('/api/material-consumptions', materialConsumptionsRoutes);
+app.use('/api/labours', labourRoutes);
 
 // Error handling middleware
 app.use(notFound);
