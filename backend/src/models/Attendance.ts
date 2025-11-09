@@ -14,6 +14,7 @@ export interface IAttendance extends Document {
   hours?: number;
   overtimeHours?: number;
   notes?: string;
+  attachments?: mongoose.Types.ObjectId[]; // Image attachments with date/time watermark
   approvedBy?: mongoose.Types.ObjectId;
   isApproved: boolean;
   createdAt: Date;
@@ -86,6 +87,10 @@ const AttendanceSchema = new Schema<IAttendance>({
     trim: true,
     maxlength: [500, 'Notes cannot be more than 500 characters']
   },
+  attachments: [{
+    type: Schema.Types.ObjectId,
+    ref: 'FileAttachment'
+  }],
   approvedBy: {
     type: Schema.Types.ObjectId,
     ref: 'User'
@@ -99,7 +104,23 @@ const AttendanceSchema = new Schema<IAttendance>({
 });
 
 // Index for better query performance
-AttendanceSchema.index({ employeeId: 1, date: 1 }, { unique: true });
+// Note: We removed the unique constraint on employeeId_1_date_1 because it was causing issues
+// with multiple labour records (employeeId: null) on the same date.
+// Duplicate checking is now handled in the controller by checking employeeName + date + projectId for labour records.
+
+// For employees (with employeeId), non-unique index for query performance
+// Only applies when employeeId is not null (for actual employees, not labour)
+AttendanceSchema.index({ employeeId: 1, date: 1 }, { 
+  partialFilterExpression: { employeeId: { $ne: null } }
+});
+
+// For labour records, non-unique index for query performance
+// Multiple different labours (e.g., multiple carpenters) can have attendance on the same date
+AttendanceSchema.index({ employeeName: 1, date: 1, projectId: 1 }, { 
+  partialFilterExpression: { employeeId: null }
+});
+
+// Regular indexes for query performance
 AttendanceSchema.index({ projectId: 1 });
 AttendanceSchema.index({ date: 1 });
 AttendanceSchema.index({ status: 1 });

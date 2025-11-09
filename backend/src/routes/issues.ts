@@ -39,7 +39,11 @@ router.post('/', [
   body('description').optional().trim().isLength({ min: 2, max: 1000 }).withMessage('Description must be between 2 and 1000 characters'),
   body('projectId').isMongoId().withMessage('Invalid project ID'),
   body('assignedTo').optional().custom((value) => {
-    // Allow string values like "sabari" or valid MongoDB ObjectIds
+    // Allow empty string, null, undefined, or valid string values
+    if (value === undefined || value === null || value === '') {
+      return true; // Empty is allowed for employees reporting issues
+    }
+    // If provided, must be a non-empty string
     if (typeof value === 'string' && value.length > 0) {
       return true;
     }
