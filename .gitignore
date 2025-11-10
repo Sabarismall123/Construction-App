@@ -45,3 +45,6 @@ ios/
 @esbuild/win32-*
 @esbuild/darwin-*
 
+# Package lock file - let Vercel generate Linux version
+package-lock.json
+
