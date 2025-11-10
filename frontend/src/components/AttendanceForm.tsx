@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { X, User, Phone, Building, Briefcase } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, User, Phone, Building, Briefcase, Camera, Image as ImageIcon } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Attendance } from '@/types';
 import { ATTENDANCE_STATUSES } from '@/constants';
 import { toast } from 'react-hot-toast';
+import { apiService } from '@/services/api';
+import PhotoCapture from './PhotoCapture';
 
 interface AttendanceFormProps {
   attendance?: Attendance | null;
@@ -13,7 +15,7 @@ interface AttendanceFormProps {
 
 const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) => {
   const { addAttendance, updateAttendance, projects, users } = useData();
-  const { hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const [formData, setFormData] = useState({
     labourName: '',
     mobileNumber: '',
@@ -26,6 +28,11 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [photoAttachments, setPhotoAttachments] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [hasCapturedPhotos, setHasCapturedPhotos] = useState(false);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -47,6 +54,10 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
         hours: attendance.hours?.toString() || '8',
         status: attendance.status || 'present'
       });
+      // Set attachments if they exist
+      if ((attendance as any).attachments) {
+        setAttachments((attendance as any).attachments || []);
+      }
     } else {
       // Set default values for new labour
       setFormData({
@@ -59,6 +70,9 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
         hours: '8',
         status: 'present'
       });
+      setAttachments([]);
+      setPhotoAttachments([]);
+      setHasCapturedPhotos(false);
     }
   }, [attendance]);
 
@@ -71,6 +85,13 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
 
     if (!formData.projectId) {
       newErrors.projectId = 'Project is required';
+    }
+
+    // For supervisors/managers adding attendance, image is required
+    // Check if photos are captured (even if not yet uploaded) or if attachments exist
+    if (!attendance && hasRole(['admin', 'manager', 'site_supervisor']) && 
+        !hasCapturedPhotos && photoAttachments.length === 0 && attachments.length === 0) {
+      newErrors.attachments = 'Image attachment is required for attendance';
     }
 
     setErrors(newErrors);
@@ -88,7 +109,7 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
 
     try {
       const today = new Date().toISOString().split('T')[0];
-      const attendanceData = {
+      const attendanceData: any = {
         employeeName: formData.labourName.trim(),
         mobileNumber: formData.mobileNumber.trim(),
         projectId: formData.projectId,
@@ -97,16 +118,37 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
         timeIn: formData.timeIn,
         timeOut: formData.timeOut,
         status: formData.status as any,
-        hours: parseInt(formData.hours) || 8
+        hours: parseInt(formData.hours) || 8,
+        attachments: [...attachments, ...photoAttachments] // Combine both attachment types
       };
 
       if (attendance) {
-        // Update existing attendance
+        // Update existing attendance - only managers can edit
+        if (!hasRole(['admin', 'manager'])) {
+          toast.error('Only managers can edit attendance records');
+          return;
+        }
         await updateAttendance(attendance.id, attendanceData);
         toast.success('Labour updated successfully');
       } else {
-        // Add new attendance
+        // Add new attendance - managers and supervisors can add
         await addAttendance(attendanceData);
+        
+        // Also create a labour profile for future quick attendance marking
+        try {
+          await apiService.createLabour({
+            name: formData.labourName.trim(),
+            mobileNumber: formData.mobileNumber.trim(),
+            labourType: formData.labourType.trim(),
+            projectId: formData.projectId,
+            isActive: true
+          });
+          console.log('✅ Labour profile created successfully');
+        } catch (error) {
+          console.warn('⚠️  Failed to create labour profile (attendance still created):', error);
+          // Don't fail the attendance creation if labour profile creation fails
+        }
+        
         toast.success('Labour created successfully');
       }
 
@@ -329,6 +371,135 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
                   ))}
                 </select>
               </div>
+
+              {/* Photo Capture - Required for supervisors/managers when adding new attendance */}
+              {!attendance && hasRole(['admin', 'manager', 'site_supervisor']) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Attendance Photo <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Photo with current date and time is required for attendance verification
+                  </p>
+                  <PhotoCapture
+                    onPhotosCaptured={async (photos) => {
+                      console.log('Photos captured for attendance:', photos);
+                      
+                      // Mark that photos are captured (clear error immediately)
+                      if (photos.length > 0) {
+                        setHasCapturedPhotos(true);
+                        // Clear attachment error if it exists
+                        if (errors.attachments) {
+                          setErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.attachments;
+                            return newErrors;
+                          });
+                        }
+                      }
+                      
+                      // Upload photos asynchronously
+                      setIsUploadingPhotos(true);
+                      try {
+                        const uploadedFileIds: string[] = [];
+                        for (const photo of photos) {
+                          try {
+                            // Add date/time watermark to photo before uploading
+                            const { photoService } = await import('@/services/photoService');
+                            const watermarkedFile = await photoService.addDateTimeWatermark(photo);
+                            
+                            // Upload watermarked photo file
+                            const response = await apiService.uploadFile(
+                              watermarkedFile,
+                              undefined,
+                              formData.projectId || undefined
+                            );
+                            if ((response as any).data?._id) {
+                              uploadedFileIds.push((response as any).data._id);
+                            }
+                          } catch (error) {
+                            console.error('Failed to upload photo:', error);
+                            toast.error('Failed to upload some photos');
+                          }
+                        }
+                        setPhotoAttachments(uploadedFileIds);
+                        if (uploadedFileIds.length > 0) {
+                          toast.success(`${uploadedFileIds.length} photo(s) uploaded with date/time watermark`);
+                        } else if (photos.length > 0) {
+                          // If photos were captured but upload failed, still allow form submission
+                          // The photo is captured, just not uploaded yet
+                          console.warn('Photos captured but upload failed, allowing form submission');
+                        }
+                      } catch (error) {
+                        console.error('Error uploading photos:', error);
+                        toast.error('Failed to upload photos');
+                      } finally {
+                        setIsUploadingPhotos(false);
+                      }
+                    }}
+                    projectId={formData.projectId}
+                    maxPhotos={1}
+                    className="mb-4"
+                  />
+                  {isUploadingPhotos && (
+                    <p className="text-xs text-blue-600 mt-1">Uploading photo...</p>
+                  )}
+                  {errors.attachments && (
+                    <p className="mt-1 text-sm text-red-600">{errors.attachments}</p>
+                  )}
+                </div>
+              )}
+
+              {/* File Upload - For editing or additional attachments */}
+              {hasRole(['admin', 'manager']) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Additional Attachments
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 flex items-center justify-center"
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Add Attachment
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = e.target.files;
+                      if (!files || files.length === 0) return;
+
+                      try {
+                        const uploadedFileIds: string[] = [];
+                        for (const file of Array.from(files)) {
+                          try {
+                            const response = await apiService.uploadFile(
+                              file,
+                              undefined,
+                              formData.projectId || undefined
+                            );
+                            if ((response as any).data?._id) {
+                              uploadedFileIds.push((response as any).data._id);
+                            }
+                          } catch (error) {
+                            console.error('Failed to upload file:', error);
+                          }
+                        }
+                        setAttachments(prev => [...prev, ...uploadedFileIds]);
+                        toast.success(`${uploadedFileIds.length} file(s) uploaded successfully`);
+                      } catch (error) {
+                        console.error('Error uploading files:', error);
+                        toast.error('Failed to upload files');
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
           
@@ -344,12 +515,17 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({ attendance, onClose }) 
             <button
               type="submit"
               className="btn-primary flex-1"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingPhotos}
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
                   <div className="loading-spinner h-4 w-4 mr-2"></div>
                   Saving...
+                </div>
+              ) : isUploadingPhotos ? (
+                <div className="flex items-center justify-center">
+                  <div className="loading-spinner h-4 w-4 mr-2"></div>
+                  Uploading photo...
                 </div>
               ) : (
                 attendance ? 'Update Labour' : 'Create New Labour'

@@ -232,6 +232,7 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
+
         {/* Account Settings */}
         <div className="card">
           <div className="card-body p-4">

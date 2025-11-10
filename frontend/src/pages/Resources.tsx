@@ -47,7 +47,7 @@ const Resources: React.FC = () => {
       <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Resources</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">
             Manage labor, materials, and equipment resources
           </p>
         </div>
@@ -66,17 +66,21 @@ const Resources: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="card-body p-4">
+      <div className="card" style={{
+        background: 'linear-gradient(135deg, rgba(255, 250, 240, 0.98) 0%, rgba(255, 248, 235, 0.95) 100%)',
+        border: '2px solid rgba(217, 119, 6, 0.15)',
+        boxShadow: '0 4px 6px -1px rgba(217, 119, 6, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      }}>
+        <div className="card-body p-4 md:p-5">
           <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
             <div className="relative flex-1 lg:max-w-md">
               <div className="search-icon">
-                <Search className="h-5 w-5" />
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="text"
                 placeholder="Search resources..."
-                className="search-input"
+                className="search-input bg-white/90"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -114,21 +118,29 @@ const Resources: React.FC = () => {
       </div>
 
       {/* Resources Grid */}
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-20">
         {filteredResources.map((resource) => (
-          <div key={resource.id} className="card hover:shadow-md transition-shadow">
-            <div className="card-body p-4">
+          <div 
+            key={resource.id} 
+            className="card hover:shadow-md transition-shadow cursor-pointer group"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 250, 240, 0.98) 0%, rgba(255, 248, 235, 0.95) 100%)',
+              border: '2px solid rgba(217, 119, 6, 0.15)',
+              boxShadow: '0 4px 6px -1px rgba(217, 119, 6, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            }}
+          >
+            <div className="card-body p-4 md:p-5">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center flex-1 min-w-0">
-                  <div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                    <span className="text-lg">{getTypeIcon(resource.type)}</span>
+                  <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                    <span className="text-2xl">{getTypeIcon(resource.type)}</span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">{resource.name}</h3>
-                    <p className="text-sm text-gray-500 truncate">{RESOURCE_TYPES.find(t => t.value === resource.type)?.label}</p>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate mb-1">{resource.name}</h3>
+                    <p className="text-sm text-gray-600 font-medium truncate">{RESOURCE_TYPES.find(t => t.value === resource.type)?.label}</p>
                   </div>
                 </div>
-                <div className="flex space-x-1 flex-shrink-0">
+                <div className="flex space-x-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                   {hasRole(['admin', 'manager', 'site_supervisor']) && (
                     <>
                       <button
@@ -136,13 +148,13 @@ const Resources: React.FC = () => {
                           setEditingResource(resource);
                           setShowForm(true);
                         }}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                        className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => deleteResource(resource.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -151,45 +163,45 @@ const Resources: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 mb-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Status</span>
+                  <span className="text-sm font-medium text-gray-700">Status</span>
                   <span className={`status-badge ${getStatusColor(resource.status)}`}>
                     {RESOURCE_STATUSES.find(s => s.value === resource.status)?.label}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Quantity</span>
-                  <span className="text-sm font-medium truncate">{resource.quantity} {resource.unit}</span>
+                  <span className="text-sm font-medium text-gray-700">Quantity</span>
+                  <span className="text-sm font-semibold text-gray-900 truncate">{resource.quantity} {resource.unit}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Allocated</span>
-                  <span className="text-sm font-medium truncate">{resource.allocatedQuantity} {resource.unit}</span>
+                  <span className="text-sm font-medium text-gray-700">Allocated</span>
+                  <span className="text-sm font-semibold text-gray-900 truncate">{resource.allocatedQuantity} {resource.unit}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Cost</span>
-                  <span className="text-sm font-medium truncate">{formatCurrency(resource.cost)}</span>
+                  <span className="text-sm font-medium text-gray-700">Cost</span>
+                  <span className="text-sm font-semibold text-orange-600 truncate">{formatCurrency(resource.cost)}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Project</span>
-                  <span className="text-sm font-medium truncate">{getProjectName(resource.projectId)}</span>
+                  <span className="text-sm font-medium text-gray-700">Project</span>
+                  <span className="text-sm font-medium text-gray-900 truncate">{getProjectName(resource.projectId)}</span>
                 </div>
               </div>
 
-              <div className="mt-3">
+              <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-gray-500">Allocation</span>
-                  <span className="font-medium">
+                  <span className="text-gray-600 font-medium">Allocation</span>
+                  <span className="font-semibold text-gray-900">
                     {resource.quantity > 0 ? Math.round((resource.allocatedQuantity / resource.quantity) * 100) : 0}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div
-                    className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-orange-500 to-amber-600 h-2.5 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${resource.quantity > 0 ? (resource.allocatedQuantity / resource.quantity) * 100 : 0}%` 
                     }}

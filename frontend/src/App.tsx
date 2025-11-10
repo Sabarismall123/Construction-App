@@ -21,6 +21,37 @@ import Settings from '@/pages/Settings';
 import Reports from '@/pages/Reports';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
+// Protected Route Component
+function ProtectedRoute({ children, module, allowRoles }: { children: React.ReactElement; module: string; allowRoles?: string[] }) {
+  const { user, hasPermission, hasRole } = useAuth();
+  
+  // Admins and managers ALWAYS have access to all pages - check user directly
+  if (user && (user.role === 'admin' || user.role === 'manager')) {
+    return children;
+  }
+  
+  // If allowRoles is specified, check role instead of module permission
+  if (allowRoles && hasRole(allowRoles as any)) {
+    return children;
+  }
+  
+  // Otherwise, check module permission
+  if (!hasPermission(module)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            You don't have permission to access this page.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  return children;
+}
+
 function AppRoutes() {
   const { user, isLoading } = useAuth();
   const isMobile = useIsMobile();
@@ -43,18 +74,18 @@ function AppRoutes() {
     <Layout>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/:projectId" element={<ProjectStatus />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/issues" element={<Issues />} />
-        <Route path="/resources" element={<Resources />} />
-        <Route path="/attendance" element={<Attendance />} />
-        <Route path="/petty-cash" element={<PettyCash />} />
-        <Route path="/commercial/*" element={<Commercial />} />
-        <Route path="/users" element={<Users />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/reports" element={<Reports />} />
+        <Route path="/dashboard" element={<ProtectedRoute module="dashboard"><Dashboard /></ProtectedRoute>} />
+        <Route path="/projects" element={<ProtectedRoute module="projects"><Projects /></ProtectedRoute>} />
+        <Route path="/projects/:projectId" element={<ProtectedRoute module="projects"><ProjectStatus /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute module="tasks"><Tasks /></ProtectedRoute>} />
+        <Route path="/issues" element={<ProtectedRoute module="issues"><Issues /></ProtectedRoute>} />
+        <Route path="/resources" element={<ProtectedRoute module="resources"><Resources /></ProtectedRoute>} />
+        <Route path="/attendance" element={<ProtectedRoute module="attendance"><Attendance /></ProtectedRoute>} />
+        <Route path="/petty-cash" element={<ProtectedRoute module="petty_cash"><PettyCash /></ProtectedRoute>} />
+        <Route path="/commercial/*" element={<ProtectedRoute module="commercial"><Commercial /></ProtectedRoute>} />
+        <Route path="/users" element={<ProtectedRoute module="users"><Users /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute module="settings"><Settings /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute module="reports"><Reports /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Layout>
