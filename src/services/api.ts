@@ -1,9 +1,10 @@
 // Detect API URL - use production backend URL for deployed frontend
 const getApiBaseUrl = () => {
   // If VITE_API_URL is set, use it
-  if (import.meta.env.VITE_API_URL) {
-    console.log('📡 Using API URL from env:', import.meta.env.VITE_API_URL);
-    return import.meta.env.VITE_API_URL;
+  const apiUrl = (import.meta as any).env?.VITE_API_URL;
+  if (apiUrl) {
+    console.log('📡 Using API URL from env:', apiUrl);
+    return apiUrl;
   }
   
   // If we're on localhost, use local backend
@@ -76,13 +77,16 @@ class ApiService {
         });
         
         // Create error with proper message
-        const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+        const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
         const error: any = new Error(errorMessage);
         error.response = {
           status: response.status,
           statusText: response.statusText,
           data: errorData
         };
+        // Preserve the full error data for duplicate checks
+        error.errorData = errorData;
+        error.success = errorData.success;
         throw error;
       }
       
@@ -331,6 +335,35 @@ class ApiService {
 
   async deleteInventoryItem(id: string) {
     return this.request(`/inventory/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Site Transfer endpoints
+  async getSiteTransfers() {
+    return this.request('/site-transfers');
+  }
+
+  async getSiteTransfer(id: string) {
+    return this.request(`/site-transfers/${id}`);
+  }
+
+  async createSiteTransfer(transfer: any) {
+    return this.request('/site-transfers', {
+      method: 'POST',
+      body: JSON.stringify(transfer),
+    });
+  }
+
+  async updateSiteTransfer(id: string, transfer: any) {
+    return this.request(`/site-transfers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(transfer),
+    });
+  }
+
+  async deleteSiteTransfer(id: string) {
+    return this.request(`/site-transfers/${id}`, {
       method: 'DELETE',
     });
   }

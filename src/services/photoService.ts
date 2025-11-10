@@ -200,7 +200,7 @@ class PhotoService {
     });
   }
 
-  // Add date/time watermark to photo file and return as File
+  // Add date/time/location watermark to photo file and return as File
   async addDateTimeWatermark(photo: PhotoMetadata): Promise<File> {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
@@ -215,16 +215,17 @@ class PhotoService {
         ctx?.drawImage(img, 0, 0);
 
         if (ctx) {
-          // Calculate overlay height based on content
-          const overlayHeight = 90;
+          // Calculate overlay height based on content (more space for location)
+          const hasLocation = photo.address || photo.location;
+          const overlayHeight = hasLocation ? 120 : 90;
           const overlayY = canvas.height - overlayHeight - 10;
           
           // Add overlay background with better visibility
           ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
           ctx.fillRect(10, overlayY, canvas.width - 20, overlayHeight);
 
-          // Add timestamp with date and time
-          const now = new Date(photo.timestamp);
+          // Add timestamp with date and time (current time when watermarking)
+          const now = new Date();
           const dateStr = now.toLocaleDateString('en-US', { 
             year: 'numeric', 
             month: '2-digit', 
@@ -242,17 +243,36 @@ class PhotoService {
           ctx.fillText(`📅 Date: ${dateStr}`, 20, overlayY + 25);
           ctx.fillText(`🕐 Time: ${timeStr}`, 20, overlayY + 50);
 
-          // Add location if available
+          // Add location if available (prioritize address, fallback to coordinates)
           if (photo.address) {
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(`📍 Location:`, 20, overlayY + 75);
             ctx.font = '14px Arial';
-            ctx.fillText(`📍 ${photo.address.substring(0, 50)}${photo.address.length > 50 ? '...' : ''}`, 20, overlayY + 75);
+            // Split long addresses into multiple lines
+            const maxWidth = canvas.width - 40;
+            const addressLines = this.wrapText(ctx, photo.address, maxWidth);
+            addressLines.forEach((line, index) => {
+              ctx.fillText(line, 20, overlayY + 95 + (index * 20));
+            });
           } else if (photo.location) {
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(`📍 Location:`, 20, overlayY + 75);
             ctx.font = '14px Arial';
             ctx.fillText(
-              `📍 Lat: ${photo.location.latitude.toFixed(6)}, Lng: ${photo.location.longitude.toFixed(6)}`, 
+              `Lat: ${photo.location.latitude.toFixed(6)}`, 
               20, 
-              overlayY + 75
+              overlayY + 95
             );
+            ctx.fillText(
+              `Lng: ${photo.location.longitude.toFixed(6)}`, 
+              20, 
+              overlayY + 115
+            );
+          } else {
+            // If no location, show a message
+            ctx.font = '14px Arial';
+            ctx.fillStyle = 'yellow';
+            ctx.fillText(`⚠️ Location not available`, 20, overlayY + 75);
           }
         }
 
@@ -271,6 +291,26 @@ class PhotoService {
       img.onerror = () => reject(new Error('Failed to load image'));
       img.src = URL.createObjectURL(photo.file);
     });
+  }
+
+  // Helper method to wrap text to fit within max width
+  private wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i];
+      const width = ctx.measureText(currentLine + ' ' + word).width;
+      if (width < maxWidth) {
+        currentLine += ' ' + word;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    lines.push(currentLine);
+    return lines;
   }
 
   // Extract EXIF data from photo

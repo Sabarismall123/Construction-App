@@ -208,7 +208,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         console.log('🔄 Loading data from API...');
         // Try to load projects, tasks, issues, attendance, and resources from API first
-        const [projectsResponse, tasksResponse, issuesResponse, attendanceResponse, resourcesResponse, pettyCashResponse, commercialResponse, usersResponse, inventoryResponse, materialIssuesResponse, materialReturnsResponse, materialConsumptionsResponse] = await Promise.all([
+        const [projectsResponse, tasksResponse, issuesResponse, attendanceResponse, resourcesResponse, pettyCashResponse, commercialResponse, usersResponse, inventoryResponse, siteTransfersResponse, materialIssuesResponse, materialReturnsResponse, materialConsumptionsResponse] = await Promise.all([
           apiService.getProjects(),
           apiService.getTasks(),
           apiService.getIssues(),
@@ -218,6 +218,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           apiService.getCommercialEntries(),
           apiService.getUsers(),
           apiService.getInventoryItems(),
+          apiService.getSiteTransfers().catch(() => ({ success: true, data: [] })), // Fallback if API doesn't exist
           apiService.getMaterialIssues(),
           apiService.getMaterialReturns(),
           apiService.getMaterialConsumptions()
@@ -247,6 +248,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const commercial = (commercialResponse as any).data || commercialResponse;
         const users = (usersResponse as any).data || usersResponse;
         const inventory = (inventoryResponse as any).data || inventoryResponse;
+        const siteTransfers = (siteTransfersResponse as any).data || siteTransfersResponse || [];
         const materialIssues = (materialIssuesResponse as any).data || materialIssuesResponse;
         const materialReturns = (materialReturnsResponse as any).data || materialReturnsResponse;
         const materialConsumptions = (materialConsumptionsResponse as any).data || materialConsumptionsResponse;
@@ -331,19 +333,52 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             createdAt: new Date(r.createdAt || Date.now()),
             updatedAt: new Date(r.updatedAt || Date.now())
           })),
-          pettyCash: pettyCash.map((pc: any) => ({
-            ...pc,
-            id: pc._id || pc.id,
-            date: pc.requestDate ? formatDate(new Date(pc.requestDate)) : formatDate(new Date(pc.date || Date.now())),
-            amount: pc.amount || 0,
-            projectId: pc.projectId?._id || pc.projectId || pc.projectId,
-            paidTo: pc.requestedBy?.name || pc.paidTo || '',
-            category: pc.category || 'other',
-            description: pc.description || '',
-            attachment: pc.receiptImage || pc.attachment || '',
-            createdAt: formatDate(new Date(pc.createdAt || Date.now())),
+          pettyCash: pettyCash.map((pc: any) => {
+            // Map old category values to new ones
+            let category = pc.category || 'other';
+            if (category === 'food') category = 'meals';
+            if (category === 'tools') category = 'supplies';
+            if (category === 'miscellaneous' || category === 'emergency') category = 'other';
+            
+            // Format date for storage - use ISO format or yyyy-MM-dd for form compatibility
+            let dateValue = '';
+            if (pc.requestDate) {
+              dateValue = formatDate(new Date(pc.requestDate), 'yyyy-MM-dd');
+            } else if (pc.date) {
+              if (typeof pc.date === 'string') {
+                // If it's already in yyyy-MM-dd format, use it directly
+                if (/^\d{4}-\d{2}-\d{2}$/.test(pc.date)) {
+                  dateValue = pc.date;
+                } else {
+                  // Try to parse and format
+                  const parsed = new Date(pc.date);
+                  if (!isNaN(parsed.getTime())) {
+                    dateValue = formatDate(parsed, 'yyyy-MM-dd');
+                  } else {
+                    dateValue = formatDate(new Date(), 'yyyy-MM-dd');
+                  }
+                }
+              } else {
+                dateValue = formatDate(new Date(pc.date), 'yyyy-MM-dd');
+              }
+            } else {
+              dateValue = formatDate(new Date(), 'yyyy-MM-dd');
+            }
+            
+            return {
+              ...pc,
+              id: pc._id || pc.id,
+              date: dateValue,
+              amount: pc.amount || 0,
+              projectId: pc.projectId?._id || pc.projectId || pc.projectId,
+              paidTo: pc.requestedBy?.name || pc.paidTo || '',
+              category: category,
+              description: pc.description || '',
+              attachment: pc.receiptImage || pc.attachment || '',
+              createdAt: formatDate(new Date(pc.createdAt || Date.now())),
             updatedAt: formatDate(new Date(pc.updatedAt || Date.now()))
-          })),
+          };
+          }),
           users: users.map((u: any) => ({
             ...u,
             id: u._id || u.id,
@@ -355,6 +390,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: i._id || i.id,
             createdAt: formatDate(new Date(i.createdAt || Date.now())),
             updatedAt: formatDate(new Date(i.updatedAt || Date.now()))
+          })),
+          siteTransfers: (Array.isArray(siteTransfers) ? siteTransfers : []).map((st: any) => ({
+            ...st,
+            id: st._id || st.id,
+            fromProjectId: st.fromProjectId?._id || st.fromProjectId || st.fromProjectId,
+            toProjectId: st.toProjectId?._id || st.toProjectId || st.toProjectId,
+            materialId: st.materialId?._id || st.materialId || st.materialId,
+            transferredBy: st.transferredBy?._id || st.transferredBy || st.transferredBy,
+            transferDate: st.transferDate ? formatDate(new Date(st.transferDate), 'yyyy-MM-dd') : formatDate(new Date(), 'yyyy-MM-dd'),
+            createdAt: formatDate(new Date(st.createdAt || Date.now()))
           })),
           materialIssues: materialIssues.map((mi: any) => ({
             ...mi,
@@ -987,21 +1032,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addResource = async (resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       // Map frontend fields to backend format
-      const resourceData = {
+      const resourceData: any = {
         name: resource.name,
         type: resource.type === 'labor' ? 'other' : resource.type,
-        category: resource.type || 'general',
-        description: '',
+        category: (resource as any).category || resource.type || 'general',
+        description: (resource as any).description || '',
         quantity: resource.quantity || 0,
         unit: resource.unit || 'unit',
         costPerUnit: resource.cost || 0,
-        supplier: '',
-        location: '',
+        supplier: (resource as any).supplier || '',
+        location: (resource as any).location || '',
         status: resource.status || 'available',
         projectId: resource.projectId || undefined,
-        purchaseDate: new Date(),
-        notes: ''
+        purchaseDate: (resource as any).purchaseDate ? new Date((resource as any).purchaseDate) : new Date(),
+        notes: '',
+        allocatedQuantity: (resource as any).allocatedQuantity || 0
       };
+
+      // Add type-specific fields
+      if (resource.type === 'labor') {
+        resourceData.mobileNumber = (resource as any).mobileNumber || '';
+        resourceData.aadharNumber = (resource as any).aadharNumber || '';
+      }
 
       const response = await apiService.createResource(resourceData);
       const newResource: Resource = {
@@ -1037,13 +1089,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (resource.type !== undefined) {
         updateData.type = resource.type === 'labor' ? 'other' : resource.type;
       }
+      if ((resource as any).category !== undefined) updateData.category = (resource as any).category;
+      if ((resource as any).description !== undefined) updateData.description = (resource as any).description;
+      if ((resource as any).location !== undefined) updateData.location = (resource as any).location;
       if (resource.quantity !== undefined) updateData.quantity = resource.quantity;
+      if ((resource as any).allocatedQuantity !== undefined) updateData.allocatedQuantity = (resource as any).allocatedQuantity;
       if (resource.unit !== undefined) updateData.unit = resource.unit;
       if (resource.cost !== undefined) updateData.costPerUnit = resource.cost;
+      if ((resource as any).supplier !== undefined) updateData.supplier = (resource as any).supplier;
       if (resource.status !== undefined) {
         updateData.status = resource.status === 'retired' ? 'out_of_order' : resource.status;
       }
       if (resource.projectId !== undefined) updateData.projectId = resource.projectId;
+      if ((resource as any).purchaseDate !== undefined) {
+        updateData.purchaseDate = new Date((resource as any).purchaseDate);
+      }
+
+      // Add type-specific fields
+      if (resource.type === 'labor') {
+        if ((resource as any).mobileNumber !== undefined) updateData.mobileNumber = (resource as any).mobileNumber;
+        if ((resource as any).aadharNumber !== undefined) updateData.aadharNumber = (resource as any).aadharNumber;
+      }
 
       const response = await apiService.updateResource(id, updateData);
       setData(prev => ({
@@ -1110,13 +1176,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
 
       const response = await apiService.createPettyCashEntry(pettyCashData);
+      const responseData = (response as any).data;
+      // Format date in yyyy-MM-dd format for form compatibility
+      const dateValue = responseData.requestDate 
+        ? formatDate(new Date(responseData.requestDate), 'yyyy-MM-dd')
+        : responseData.date 
+        ? (typeof responseData.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(responseData.date)
+            ? responseData.date
+            : formatDate(new Date(responseData.date), 'yyyy-MM-dd'))
+        : formatDate(new Date(), 'yyyy-MM-dd');
+      
       const newPettyCash: PettyCash = {
-        ...(response as any).data,
-        id: (response as any).data._id || (response as any).data.id,
-        date: (response as any).data.requestDate ? formatDate(new Date((response as any).data.requestDate)) : formatDate(new Date((response as any).data.date || Date.now())),
-        projectId: (response as any).data.projectId?._id || (response as any).data.projectId || (response as any).data.projectId,
-        paidTo: (response as any).data.requestedBy?.name || (response as any).data.paidTo || '',
-        attachment: (response as any).data.receiptImage || (response as any).data.attachment || '',
+        ...responseData,
+        id: responseData._id || responseData.id,
+        date: dateValue,
+        projectId: responseData.projectId?._id || responseData.projectId || responseData.projectId,
+        paidTo: responseData.requestedBy?.name || responseData.paidTo || '',
+        attachment: responseData.receiptImage || responseData.attachment || '',
         createdAt: formatDate(new Date()),
         updatedAt: formatDate(new Date())
       };
@@ -1156,7 +1232,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               ...pc,
               ...updated,
               id: updated._id || updated.id || pc.id,
-              date: updated.requestDate ? formatDate(new Date(updated.requestDate)) : updated.date ? formatDate(new Date(updated.date)) : pc.date,
+              date: updated.requestDate ? formatDate(new Date(updated.requestDate), 'yyyy-MM-dd') : updated.date ? (typeof updated.date === 'string' ? updated.date : formatDate(new Date(updated.date), 'yyyy-MM-dd')) : pc.date,
               projectId: updated.projectId?._id || updated.projectId || updated.projectId,
               paidTo: updated.requestedBy?.name || updated.paidTo || pc.paidTo,
               attachment: updated.receiptImage || updated.attachment || pc.attachment,
@@ -1198,8 +1274,43 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Attendance actions
   const addAttendance = async (attendance: Omit<Attendance, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const response = await apiService.createAttendance(attendance);
+      console.log('📤 Creating attendance with attachments:', {
+        employeeName: attendance.employeeName,
+        projectId: attendance.projectId,
+        attachmentsCount: attendance.attachments?.length || 0,
+        attachments: attendance.attachments
+      });
+
+      let response;
+      try {
+        response = await apiService.createAttendance(attendance);
+      } catch (error: any) {
+        // Check if it's a duplicate error from the API
+        if (error?.errorData?.error === 'Duplicate attendance record' || 
+            error?.message?.includes('Duplicate attendance record') ||
+            error?.message?.includes('already exists')) {
+          throw new Error(error?.errorData?.message || error?.message || 'Duplicate attendance record');
+        }
+        throw error;
+      }
+      
+      // Check if response indicates an error
+      if ((response as any).success === false) {
+        const errorResponse = response as any;
+        // If it's a duplicate error, throw it with the error details
+        if (errorResponse.error === 'Duplicate attendance record') {
+          throw new Error(errorResponse.message || errorResponse.error);
+        }
+        throw new Error(errorResponse.error || 'Failed to create attendance');
+      }
+      
       const responseData = (response as any).data || response;
+      
+      console.log('📥 Received response:', {
+        id: responseData._id || responseData.id,
+        attachmentsCount: responseData.attachments?.length || 0,
+        attachments: responseData.attachments
+      });
       
       // Map attachments - handle both populated objects and IDs
       const responseAttachments = responseData.attachments || attendance.attachments || [];
@@ -1212,6 +1323,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return attachment;
         }
         return attachment;
+      });
+
+      console.log('✅ Mapped attachments:', {
+        originalCount: responseAttachments.length,
+        mappedCount: mappedAttachments.length,
+        mapped: mappedAttachments
       });
       
       // Properly map the response to ensure projectId and projectName are preserved
@@ -1282,20 +1399,52 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateAttendance = async (id: string, attendance: Partial<Attendance>) => {
     try {
       const response = await apiService.updateAttendance(id, attendance);
+      const responseData = (response as any).data || response;
+      
+      // Map attachments - handle both populated objects and IDs
+      const responseAttachments = responseData.attachments || attendance.attachments || [];
+      const mappedAttachments = responseAttachments.map((attachment: any) => {
+        if (typeof attachment === 'object' && (attachment._id || attachment.id)) {
+          // Attachment is a populated object, return the ID
+          return attachment._id || attachment.id;
+        } else if (typeof attachment === 'string') {
+          // Attachment is already an ID string
+          return attachment;
+        }
+        return attachment;
+      });
+      
+      // Properly map the response to ensure all fields are preserved
+      const updatedAttendance = {
+        ...responseData,
+        id: responseData._id || responseData.id || id,
+        projectId: responseData.projectId?._id || responseData.projectId || attendance.projectId,
+        projectName: responseData.projectName || responseData.projectId?.name || 
+                     data.projects.find(p => {
+                       const projectId = responseData.projectId?._id || responseData.projectId || attendance.projectId;
+                       return p.id === projectId || p.id === projectId?.toString();
+                     })?.name || 'Unknown Project',
+        employeeName: responseData.employeeName || attendance.employeeName,
+        mobileNumber: responseData.mobileNumber || attendance.mobileNumber,
+        labourType: responseData.labourType || attendance.labourType,
+        attachments: mappedAttachments, // Map attachments to IDs
+        updatedAt: new Date()
+      };
+      
       setData(prev => ({
         ...prev,
-          attendance: prev.attendance.map(a => 
-            a.id === id ? { ...a, ...(response as any).data, updatedAt: new Date() } : a
-          )
+        attendance: prev.attendance.map(a => 
+          a.id === id ? { ...a, ...updatedAttendance } : a
+        )
       }));
     } catch (error) {
       console.error('Failed to update attendance:', error);
       // Fallback to localStorage if API fails
       setData(prev => ({
         ...prev,
-          attendance: prev.attendance.map(a => 
-            a.id === id ? { ...a, ...attendance, updatedAt: new Date() } : a
-          )
+        attendance: prev.attendance.map(a => 
+          a.id === id ? { ...a, ...attendance, updatedAt: new Date() } : a
+        )
       }));
     }
   };
@@ -1386,29 +1535,68 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Site Transfer actions
-  const addSiteTransfer = (transfer: Omit<SiteTransfer, 'id' | 'createdAt'>) => {
-    const newTransfer: SiteTransfer = {
-      ...transfer,
-      id: generateId(),
-      createdAt: formatDate(new Date())
-    };
-    setData(prev => ({ ...prev, siteTransfers: [...prev.siteTransfers, newTransfer] }));
+  const addSiteTransfer = async (transfer: Omit<SiteTransfer, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const response = await apiService.createSiteTransfer(transfer);
+      const responseData = (response as any).data || response;
+      
+      const newTransfer: SiteTransfer = {
+        ...responseData,
+        id: responseData._id || responseData.id,
+        fromProjectId: responseData.fromProjectId?._id || responseData.fromProjectId || transfer.fromProjectId,
+        toProjectId: responseData.toProjectId?._id || responseData.toProjectId || transfer.toProjectId,
+        materialId: responseData.materialId?._id || responseData.materialId || transfer.materialId,
+        transferredBy: responseData.transferredBy?._id || responseData.transferredBy || transfer.transferredBy,
+        transferDate: responseData.transferDate ? formatDate(new Date(responseData.transferDate), 'yyyy-MM-dd') : formatDate(new Date(), 'yyyy-MM-dd'),
+        createdAt: formatDate(new Date(responseData.createdAt || Date.now()))
+      };
+      
+      setData(prev => ({ ...prev, siteTransfers: [...prev.siteTransfers, newTransfer] }));
+    } catch (error) {
+      console.error('Failed to create site transfer:', error);
+      throw error;
+    }
   };
 
-  const updateSiteTransfer = (id: string, transfer: Partial<SiteTransfer>) => {
-    setData(prev => ({
-      ...prev,
-      siteTransfers: prev.siteTransfers.map(st => 
-        st.id === id ? { ...st, ...transfer } : st
-      )
-    }));
+  const updateSiteTransfer = async (id: string, transfer: Partial<SiteTransfer>) => {
+    try {
+      const response = await apiService.updateSiteTransfer(id, transfer);
+      const responseData = (response as any).data || response;
+      
+      const updatedTransfer: SiteTransfer = {
+        ...responseData,
+        id: responseData._id || responseData.id,
+        fromProjectId: responseData.fromProjectId?._id || responseData.fromProjectId || transfer.fromProjectId,
+        toProjectId: responseData.toProjectId?._id || responseData.toProjectId || transfer.toProjectId,
+        materialId: responseData.materialId?._id || responseData.materialId || transfer.materialId,
+        transferredBy: responseData.transferredBy?._id || responseData.transferredBy || transfer.transferredBy,
+        transferDate: responseData.transferDate ? formatDate(new Date(responseData.transferDate), 'yyyy-MM-dd') : formatDate(new Date(), 'yyyy-MM-dd'),
+        createdAt: formatDate(new Date(responseData.createdAt || Date.now()))
+      };
+      
+      setData(prev => ({
+        ...prev,
+        siteTransfers: prev.siteTransfers.map(st => 
+          st.id === id ? updatedTransfer : st
+        )
+      }));
+    } catch (error) {
+      console.error('Failed to update site transfer:', error);
+      throw error;
+    }
   };
 
-  const deleteSiteTransfer = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      siteTransfers: prev.siteTransfers.filter(st => st.id !== id)
-    }));
+  const deleteSiteTransfer = async (id: string) => {
+    try {
+      await apiService.deleteSiteTransfer(id);
+      setData(prev => ({
+        ...prev,
+        siteTransfers: prev.siteTransfers.filter(st => st.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete site transfer:', error);
+      throw error;
+    }
   };
 
   // Material Issue actions

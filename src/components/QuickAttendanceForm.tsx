@@ -18,6 +18,7 @@ const QuickAttendanceForm: React.FC<QuickAttendanceFormProps> = ({ onClose }) =>
     labourId: '',
     projectId: '',
     timeIn: new Date().toTimeString().slice(0, 5), // Current time in HH:MM
+    timeOut: '', // Time out (optional)
     status: 'present' as const
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -28,24 +29,92 @@ const QuickAttendanceForm: React.FC<QuickAttendanceFormProps> = ({ onClose }) =>
   const [labours, setLabours] = useState<any[]>([]);
   const [loadingLabours, setLoadingLabours] = useState(false);
 
-  // Load labours from API - filter by project if selected
+  // Load labours from API and labor resources - filter by project if selected
   useEffect(() => {
     const loadLabours = async () => {
       setLoadingLabours(true);
       try {
-        let response;
+        // Load labours from Labour API
+        let laboursResponse;
         if (formData.projectId) {
-          // Load labours for the selected project
-          response = await apiService.getLaboursByProject(formData.projectId);
+          laboursResponse = await apiService.getLaboursByProject(formData.projectId);
         } else {
-          // Load all labours
-          response = await apiService.getLabours();
+          laboursResponse = await apiService.getLabours();
         }
-        const laboursData = (response as any).data || response;
+        const laboursData = (laboursResponse as any).data || laboursResponse;
         const activeLabours = Array.isArray(laboursData) 
           ? laboursData.filter((l: any) => l.isActive !== false)
           : [];
-        setLabours(activeLabours);
+
+        // Also load labor resources from Resources API
+        let resourcesResponse;
+        if (formData.projectId) {
+          resourcesResponse = await apiService.getResourcesByProject(formData.projectId);
+        } else {
+          resourcesResponse = await apiService.getResources();
+        }
+        const resourcesData = (resourcesResponse as any).data || resourcesResponse;
+        const resourcesArray = Array.isArray(resourcesData) ? resourcesData : (resourcesData?.data || []);
+        
+        // Filter for labor resources
+        // Backend maps 'labor' to 'other', so check for:
+        // 1. type === 'labor' (if frontend sends it directly)
+        // 2. type === 'other' AND (mobileNumber OR category === 'labor' OR aadharNumber)
+        const laborResources = resourcesArray.filter((r: any) => {
+          const isLaborType = r.type === 'labor' || 
+                             (r.type === 'other' && (r.mobileNumber || r.category === 'labor' || r.aadharNumber));
+          const isValidStatus = r.status === 'available' || r.status === 'in_use';
+          
+          // If project is selected, check if resource matches the project
+          let matchesProject = true;
+          if (formData.projectId) {
+            const resourceProjectId = r.projectId?._id || r.projectId || r.projectId?.id;
+            const resourceProjectIdStr = resourceProjectId?.toString();
+            const selectedProjectIdStr = formData.projectId.toString();
+            matchesProject = resourceProjectIdStr === selectedProjectIdStr;
+          }
+          
+          return isLaborType && isValidStatus && matchesProject;
+        });
+
+        console.log('🔍 Labor resources found:', {
+          totalResources: resourcesArray.length,
+          laborResources: laborResources.length,
+          laborResourcesList: laborResources.map((r: any) => ({
+            name: r.name,
+            type: r.type,
+            category: r.category,
+            projectId: r.projectId?._id || r.projectId || r.projectId?.id,
+            selectedProjectId: formData.projectId
+          }))
+        });
+
+        // Convert labor resources to labour format
+        const laborResourcesAsLabours = laborResources.map((r: any) => {
+          const resourceProjectId = r.projectId?._id || r.projectId || r.projectId?.id;
+          return {
+            _id: r._id || r.id,
+            id: r._id || r.id,
+            name: r.name,
+            mobileNumber: r.mobileNumber || '',
+            labourType: r.category || r.description || '',
+            projectId: resourceProjectId,
+            projectIdString: resourceProjectId?.toString(),
+            isActive: true,
+            isFromResource: true // Flag to identify it came from resources
+          };
+        });
+
+        // Combine both lists and remove duplicates by name and projectId
+        const combinedLabours = [...activeLabours, ...laborResourcesAsLabours];
+        const uniqueLabours = combinedLabours.filter((labour, index, self) => 
+          index === self.findIndex((l) => 
+            l.name === labour.name && 
+            (l.projectId?._id || l.projectId || l.projectId?.id) === (labour.projectId?._id || labour.projectId || labour.projectId?.id)
+          )
+        );
+
+        setLabours(uniqueLabours);
       } catch (error) {
         console.error('Failed to load labours:', error);
         toast.error('Failed to load labours');
@@ -87,7 +156,19 @@ const QuickAttendanceForm: React.FC<QuickAttendanceFormProps> = ({ onClose }) =>
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Wait for photos to finish uploading if they're still uploading
+    if (isUploadingPhotos) {
+      toast.error('Please wait for photos to finish uploading');
+      return;
+    }
+    
     if (!validateForm()) {
+      return;
+    }
+
+    // Ensure photos are uploaded before submitting
+    if (hasCapturedPhotos && photoAttachments.length === 0) {
+      toast.error('Please wait for photos to finish uploading');
       return;
     }
 
@@ -98,31 +179,95 @@ const QuickAttendanceForm: React.FC<QuickAttendanceFormProps> = ({ onClose }) =>
       const selectedLabour = labours.find(l => l.id === formData.labourId || l._id === formData.labourId);
       if (!selectedLabour) {
         toast.error('Selected labour not found');
+        setIsSubmitting(false);
         return;
       }
 
       const today = new Date().toISOString().split('T')[0];
+      
+      // Calculate hours if both timeIn and timeOut are provided
+      let calculatedHours = 8; // Default 8 hours
+      if (formData.timeIn && formData.timeOut) {
+        const [inHours, inMinutes] = formData.timeIn.split(':').map(Number);
+        const [outHours, outMinutes] = formData.timeOut.split(':').map(Number);
+        const inTime = inHours * 60 + inMinutes;
+        const outTime = outHours * 60 + outMinutes;
+        const diffMinutes = outTime - inTime;
+        if (diffMinutes > 0) {
+          calculatedHours = Math.round((diffMinutes / 60) * 100) / 100; // Round to 2 decimal places
+        }
+      }
+      
+      // Format date as ISO8601 string
+      const dateISO = new Date(today).toISOString();
+      
+      // Ensure mobileNumber is exactly 10 digits or undefined
+      let mobileNumber = selectedLabour.mobileNumber;
+      if (mobileNumber) {
+        // Remove any non-digit characters
+        mobileNumber = mobileNumber.replace(/\D/g, '');
+        // Only include if it's exactly 10 digits
+        if (mobileNumber.length !== 10) {
+          mobileNumber = undefined;
+        }
+      }
+      
       const attendanceData: any = {
         employeeName: selectedLabour.name || selectedLabour.labourName,
-        mobileNumber: selectedLabour.mobileNumber,
+        mobileNumber: mobileNumber || undefined,
         projectId: formData.projectId,
-        labourType: selectedLabour.labourType,
-        date: today,
-        timeIn: formData.timeIn,
-        timeOut: '', // Will be updated later
-        status: formData.status,
-        hours: 8, // Default 8 hours
-        attachments: photoAttachments
+        labourType: selectedLabour.labourType || undefined,
+        date: dateISO,
+        timeIn: formData.timeIn || undefined,
+        timeOut: formData.timeOut || undefined,
+        status: formData.status || 'present',
+        hours: Number(calculatedHours), // Ensure it's a number
+        attachments: photoAttachments.length > 0 ? photoAttachments : []
       };
 
-      await addAttendance(attendanceData);
-      toast.success('Attendance marked successfully!');
+      console.log('📤 Sending attendance data:', {
+        employeeName: attendanceData.employeeName,
+        projectId: attendanceData.projectId,
+        attachmentsCount: photoAttachments.length,
+        attachments: photoAttachments,
+        attachmentsType: photoAttachments.map(id => typeof id),
+        hasCapturedPhotos: hasCapturedPhotos,
+        isUploadingPhotos: isUploadingPhotos
+      });
+      
+      // Double-check that we have attachments if photos were captured
+      if (hasCapturedPhotos && photoAttachments.length === 0) {
+        toast.error('Photos are still uploading. Please wait...');
+        setIsSubmitting(false);
+        return;
+      }
+
+      try {
+        await addAttendance(attendanceData);
+        toast.success('Attendance marked successfully!');
+      } catch (error: any) {
+        console.error('Failed to mark attendance:', error);
+        const errorMessage = error?.message || error?.toString() || 'Failed to mark attendance. Please try again.';
+        
+        // Check if it's a duplicate error
+        if (errorMessage.includes('Duplicate attendance record') || errorMessage.includes('already exists')) {
+          toast.error(errorMessage, {
+            duration: 5000,
+            icon: '⚠️'
+          });
+        } else {
+          toast.error(errorMessage);
+        }
+        setIsSubmitting(false);
+        return;
+      }
 
       // Reset form
       setFormData({
         labourId: '',
         projectId: '',
         timeIn: new Date().toTimeString().slice(0, 5),
+        timeOut: '',
         status: 'present'
       });
       setPhotoAttachments([]);
@@ -261,6 +406,37 @@ const QuickAttendanceForm: React.FC<QuickAttendanceFormProps> = ({ onClose }) =>
                 />
               </div>
 
+              {/* Time Out */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Time Out <span className="text-gray-400 text-xs">(Optional)</span>
+                </label>
+                <input
+                  type="time"
+                  value={formData.timeOut}
+                  onChange={(e) => handleChange('timeOut', e.target.value)}
+                  className="input w-full"
+                  min={formData.timeIn} // Ensure time out is after time in
+                />
+                {formData.timeIn && formData.timeOut && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {(() => {
+                      const [inHours, inMinutes] = formData.timeIn.split(':').map(Number);
+                      const [outHours, outMinutes] = formData.timeOut.split(':').map(Number);
+                      const inTime = inHours * 60 + inMinutes;
+                      const outTime = outHours * 60 + outMinutes;
+                      const diffMinutes = outTime - inTime;
+                      if (diffMinutes > 0) {
+                        const hours = Math.floor(diffMinutes / 60);
+                        const minutes = diffMinutes % 60;
+                        return `Total hours: ${hours}h ${minutes}m`;
+                      }
+                      return 'Time out must be after time in';
+                    })()}
+                  </p>
+                )}
+              </div>
+
               {/* Status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -319,17 +495,46 @@ const QuickAttendanceForm: React.FC<QuickAttendanceFormProps> = ({ onClose }) =>
                             undefined,
                             formData.projectId || undefined
                           );
-                          if ((response as any).data?._id) {
-                            uploadedFileIds.push((response as any).data._id);
+                          
+                          console.log('📤 Photo upload response:', response);
+                          
+                          // Backend returns { success: true, data: { id: ..., ... } }
+                          const fileId = (response as any).data?.id || 
+                                        (response as any).data?._id || 
+                                        (response as any).id || 
+                                        (response as any)._id ||
+                                        (response as any).data?._id?.toString();
+                          
+                          if (fileId) {
+                            const fileIdString = fileId.toString();
+                            uploadedFileIds.push(fileIdString);
+                            console.log('✅ Photo uploaded successfully, file ID:', fileIdString);
+                          } else {
+                            console.error('❌ Photo upload response missing file ID');
+                            console.error('Full response:', JSON.stringify(response, null, 2));
+                            console.error('Response keys:', Object.keys(response || {}));
+                            console.error('Response.data keys:', Object.keys((response as any)?.data || {}));
                           }
                         } catch (error) {
-                          console.error('Failed to upload photo:', error);
+                          console.error('❌ Failed to upload photo:', error);
                           toast.error('Failed to upload some photos');
                         }
                       }
-                      setPhotoAttachments(uploadedFileIds);
+                      
+                      console.log('📎 All photos uploaded:', {
+                        count: uploadedFileIds.length,
+                        fileIds: uploadedFileIds,
+                        fileIdsType: uploadedFileIds.map(id => typeof id)
+                      });
+                      
                       if (uploadedFileIds.length > 0) {
+                        setPhotoAttachments(uploadedFileIds);
+                        console.log('✅ Photo attachments state updated:', uploadedFileIds);
                         toast.success(`${uploadedFileIds.length} photo(s) uploaded with date/time watermark`);
+                      } else {
+                        console.warn('⚠️ No photos were uploaded successfully');
+                        toast.error('Failed to upload photos. Please try again.');
+                        setHasCapturedPhotos(false);
                       }
                     } catch (error) {
                       console.error('Error uploading photos:', error);

@@ -272,10 +272,18 @@ const Attendance: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-20">
           {filteredAttendance.map((record) => (
-            <div key={record.id} className="card hover:shadow-md transition-shadow">
-              <div className="card-body p-4">
+            <div 
+              key={record.id} 
+              className="card hover:shadow-md transition-shadow cursor-pointer group"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255, 250, 240, 0.98) 0%, rgba(255, 248, 235, 0.95) 100%)',
+                border: '2px solid rgba(217, 119, 6, 0.15)',
+                boxShadow: '0 4px 6px -1px rgba(217, 119, 6, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+              }}
+            >
+              <div className="card-body p-4 md:p-5">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center flex-1 min-w-0">
                         <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0">

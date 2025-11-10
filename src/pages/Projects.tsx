@@ -90,7 +90,7 @@ const Projects: React.FC = () => {
       <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Projects</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">
             Manage your construction projects and track their progress
           </p>
         </div>
@@ -115,17 +115,21 @@ const Projects: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="card-body p-4">
+      <div className="card" style={{
+        background: 'linear-gradient(135deg, rgba(255, 250, 240, 0.98) 0%, rgba(255, 248, 235, 0.95) 100%)',
+        border: '2px solid rgba(217, 119, 6, 0.15)',
+        boxShadow: '0 4px 6px -1px rgba(217, 119, 6, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      }}>
+        <div className="card-body p-4 md:p-5">
           <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
             <div className="relative flex-1 lg:max-w-md">
               <div className="search-icon">
-                <Search className="h-5 w-5" />
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="text"
                 placeholder="Search projects..."
-                className="search-input"
+                className="search-input bg-white/90"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -149,14 +153,19 @@ const Projects: React.FC = () => {
       </div>
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 pb-20">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 pb-20">
         {filteredProjects.map((project) => (
           <div 
             key={project.id} 
-            className="card hover:shadow-md transition-shadow cursor-pointer"
+            className="card cursor-pointer group"
             onClick={() => handleView(project)}
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 250, 240, 0.98) 0%, rgba(255, 248, 235, 0.95) 100%)',
+              border: '2px solid rgba(217, 119, 6, 0.15)',
+              boxShadow: '0 4px 6px -1px rgba(217, 119, 6, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            }}
           >
-            <div className="card-body p-4">
+            <div className="card-body p-5 md:p-6">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1 truncate">
@@ -170,7 +179,7 @@ const Projects: React.FC = () => {
                 <div className="flex space-x-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => handleView(project)}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                    className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                   >
                     <Eye className="h-4 w-4" />
                   </button>
@@ -178,13 +187,13 @@ const Projects: React.FC = () => {
                     <>
                       <button
                         onClick={() => handleEdit(project)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                        className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(project.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -215,8 +224,11 @@ const Projects: React.FC = () => {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.max(0, Math.min(100, project.progress || 0))}%` }}
+                    className="h-2 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.max(0, Math.min(100, project.progress || 0))}%`,
+                      background: 'linear-gradient(135deg, #ea580c 0%, #d97706 50%, #b45309 100%)'
+                    }}
                   />
                 </div>
               </div>

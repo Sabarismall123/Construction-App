@@ -264,8 +264,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = (module: string): boolean => {
     if (!user) return false;
-    const permissions = MODULE_PERMISSIONS[user.role];
-    return permissions.includes(module);
+    // Use default permissions from constants
+    const defaultPermissions = MODULE_PERMISSIONS[user.role] || [];
+    return defaultPermissions.includes(module);
   };
 
   const hasRole = (roles: UserRole[]): boolean => {

@@ -15,39 +15,76 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
   const { projects } = useData();
   const [storedFiles, setStoredFiles] = useState<any[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [currentAttendance, setCurrentAttendance] = useState<Attendance>(attendance);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
 
-  const project = projects.find(p => p.id === attendance.projectId);
+  const project = projects.find(p => p.id === currentAttendance.projectId);
+
+  // Fetch latest attendance record from API to ensure we have the latest attachments
+  useEffect(() => {
+    const fetchLatestAttendance = async () => {
+      setLoadingAttendance(true);
+      try {
+        const response = await apiService.getAttendanceRecord(attendance.id);
+        if (response.success && response.data) {
+          const latestAttendance = response.data;
+          // Map the response to match Attendance type
+          const mappedAttendance: Attendance = {
+            ...latestAttendance,
+            id: latestAttendance._id || latestAttendance.id,
+            projectId: latestAttendance.projectId?._id || latestAttendance.projectId || latestAttendance.projectId,
+            projectName: latestAttendance.projectName || latestAttendance.projectId?.name || 'Unknown Project',
+            employeeId: latestAttendance.employeeId?._id || latestAttendance.employeeId || latestAttendance.employeeId,
+            employeeName: latestAttendance.employeeName || latestAttendance.employeeId?.name || '',
+            mobileNumber: latestAttendance.mobileNumber || latestAttendance.employeeId?.mobileNumber || '',
+            labourType: latestAttendance.labourType || '',
+            // Map attachments - handle both populated objects and IDs
+            attachments: (latestAttendance.attachments || []).map((attachment: any) => {
+              if (typeof attachment === 'object' && (attachment._id || attachment.id)) {
+                return attachment._id || attachment.id;
+              } else if (typeof attachment === 'string') {
+                return attachment;
+              }
+              return attachment;
+            }),
+            date: latestAttendance.date ? new Date(latestAttendance.date) : new Date(),
+            createdAt: latestAttendance.createdAt ? new Date(latestAttendance.createdAt) : new Date(),
+            updatedAt: latestAttendance.updatedAt ? new Date(latestAttendance.updatedAt) : new Date()
+          };
+          setCurrentAttendance(mappedAttendance);
+          console.log('✅ Fetched latest attendance with attachments:', {
+            id: mappedAttendance.id,
+            attachmentsCount: mappedAttendance.attachments?.length || 0,
+            attachments: mappedAttendance.attachments
+          });
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch latest attendance:', error);
+        // Use the provided attendance if fetch fails
+        setCurrentAttendance(attendance);
+      } finally {
+        setLoadingAttendance(false);
+      }
+    };
+
+    fetchLatestAttendance();
+  }, [attendance.id]);
 
   useEffect(() => {
     // Load files from attendance attachments
     const loadFiles = async () => {
       console.log('🔄 Loading files for attendance:', {
-        attendanceId: attendance.id,
-        attachments: attendance.attachments,
-        attachmentsLength: attendance.attachments?.length
+        attendanceId: currentAttendance.id,
+        attachments: currentAttendance.attachments,
+        attachmentsLength: currentAttendance.attachments?.length
       });
       
-      if (attendance.attachments && attendance.attachments.length > 0) {
+      if (currentAttendance.attachments && currentAttendance.attachments.length > 0) {
         setLoadingFiles(true);
         try {
-          // Check if attachments are already populated objects or just IDs
-          const firstAttachment = attendance.attachments[0];
-          
-          if (typeof firstAttachment === 'object' && (firstAttachment as any)._id) {
-            // Attachments are already populated objects from backend
-            console.log('✅ Attachments are already populated objects');
-            const files = attendance.attachments.map((attachment: any) => ({
-              id: attachment._id || attachment.id,
-              originalName: attachment.originalName || attachment.name || 'Unknown file',
-              mimetype: attachment.mimetype || attachment.type || 'application/octet-stream',
-              size: attachment.size || 0
-            }));
-            console.log('📁 Using populated files:', files);
-            setStoredFiles(files);
-          } else {
-            // Attachments are just IDs, need to load them individually
-            console.log('⚠️ Attachments are IDs, loading individually...');
-            const loadFilePromises = attendance.attachments.map(async (fileId) => {
+          // Load file info for each attachment ID
+          console.log('⚠️ Loading attachment files individually...');
+          const loadFilePromises = currentAttendance.attachments.map(async (fileId) => {
               try {
                 const response = await apiService.getFileInfo(fileId);
                 if (response.success && response.data) {
@@ -75,7 +112,6 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
             const validFiles = files.filter(file => file !== null);
             console.log('📁 Loaded files from API:', validFiles);
             setStoredFiles(validFiles);
-          }
         } catch (error) {
           console.error('❌ Error loading files:', error);
           setStoredFiles([]);
@@ -89,7 +125,7 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
     };
 
     loadFiles();
-  }, [attendance.id, attendance.attachments]);
+  }, [currentAttendance.id, currentAttendance.attachments]);
 
   const getStatusColor = (status: string) => {
     const statusConfig = ATTENDANCE_STATUSES.find(s => s.value === status);
@@ -116,110 +152,116 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
         </div>
 
         <div className="modal-body">
-          <div className="space-y-6">
-            {/* Employee Information */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Employee Information</h3>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="h-12 w-12 bg-gray-300 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
-                    <User className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-                  </div>
-                  <div>
-                    <p className="text-base font-medium text-gray-900 dark:text-white">
-                      {attendance.employeeName}
-                    </p>
-                    {attendance.mobileNumber && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {attendance.mobileNumber}
+          {loadingAttendance ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <div className="loading-spinner h-8 w-8 mx-auto mb-2"></div>
+              Loading attendance details...
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Employee Information */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Employee Information</h3>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-12 w-12 bg-gray-300 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-base font-medium text-gray-900 dark:text-white">
+                        {currentAttendance.employeeName}
                       </p>
-                    )}
+                      {currentAttendance.mobileNumber && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {currentAttendance.mobileNumber}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                
-                {attendance.labourType && (
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Labour Type:</span>
-                    <span className="text-sm text-gray-900 dark:text-white">{attendance.labourType}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Project Information */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Project Information</h3>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Project:</span>
-                  <span className="text-sm text-gray-900 dark:text-white">
-                    {attendance.projectName || project?.name || 'Unknown Project'}
-                  </span>
+                  
+                  {currentAttendance.labourType && (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Labour Type:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{currentAttendance.labourType}</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Attendance Details */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Attendance Details</h3>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Date:</span>
-                  <div className="flex items-center text-sm text-gray-900 dark:text-white">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {formatDate(attendance.date, 'MMM dd, yyyy')}
+              {/* Project Information */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Project Information</h3>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Project:</span>
+                    <span className="text-sm text-gray-900 dark:text-white">
+                      {currentAttendance.projectName || project?.name || 'Unknown Project'}
+                    </span>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Time In:</span>
-                  <div className="flex items-center text-sm text-gray-900 dark:text-white">
-                    <Clock className="h-4 w-4 mr-2" />
-                    {attendance.timeIn || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Out:</span>
-                  <div className="flex items-center text-sm text-gray-900 dark:text-white">
-                    <Clock className="h-4 w-4 mr-2" />
-                    {attendance.timeOut || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Hours:</span>
-                  <span className="text-sm text-gray-900 dark:text-white">
-                    {attendance.hours || 0}h
-                    {attendance.overtimeHours && attendance.overtimeHours > 0 && (
-                      <span className="text-orange-600 ml-1">+{attendance.overtimeHours}h OT</span>
-                    )}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(attendance.status)}`}>
-                    {ATTENDANCE_STATUSES.find(s => s.value === attendance.status)?.label}
-                  </span>
-                </div>
-
-                {attendance.notes && (
-                  <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Notes:</span>
-                    <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">
-                      {attendance.notes}
-                    </p>
-                  </div>
-                )}
               </div>
-            </div>
 
-            {/* Attachments / Images */}
-            {attendance.attachments && attendance.attachments.length > 0 && (
+              {/* Attendance Details */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Attendance Details</h3>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Date:</span>
+                    <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {formatDate(currentAttendance.date, 'MMM dd, yyyy')}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Time In:</span>
+                    <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                      <Clock className="h-4 w-4 mr-2" />
+                      {currentAttendance.timeIn || 'N/A'}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Out:</span>
+                    <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                      <Clock className="h-4 w-4 mr-2" />
+                      {currentAttendance.timeOut || 'N/A'}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Hours:</span>
+                    <span className="text-sm text-gray-900 dark:text-white">
+                      {currentAttendance.hours || 0}h
+                      {currentAttendance.overtimeHours && currentAttendance.overtimeHours > 0 && (
+                        <span className="text-orange-600 ml-1">+{currentAttendance.overtimeHours}h OT</span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(currentAttendance.status)}`}>
+                      {ATTENDANCE_STATUSES.find(s => s.value === currentAttendance.status)?.label}
+                    </span>
+                  </div>
+
+                  {currentAttendance.notes && (
+                    <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Notes:</span>
+                      <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">
+                        {currentAttendance.notes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Attachments / Images */}
+              {currentAttendance.attachments && currentAttendance.attachments.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Attendance Photos ({attendance.attachments.length})
+                  Attendance Photos ({currentAttendance.attachments.length})
                 </h3>
                 {loadingFiles ? (
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -227,7 +269,7 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {attendance.attachments.map((attachment, index) => {
+                    {currentAttendance.attachments.map((attachment, index) => {
                       // Handle both populated objects and ID strings
                       const attachmentId = typeof attachment === 'object' ? ((attachment as any)._id || (attachment as any).id) : attachment;
                       const storedFile = storedFiles.find(f => f.id === attachmentId || f.id === attachment);
@@ -300,13 +342,14 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
               </div>
             )}
 
-            {(!attendance.attachments || attendance.attachments.length === 0) && (
+            {(!currentAttendance.attachments || currentAttendance.attachments.length === 0) && (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <Image className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No attendance photos uploaded</p>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="modal-footer">
