@@ -48,7 +48,9 @@ app.use(cors({
       'https://construction-app-o7qj.vercel.app',
       'https://construction-app-o7qj-o3h1wiua9-sabaris-projects-383b3041.vercel.app',
       'https://construction-app.vercel.app',
+      'https://construction-website-psi-six.vercel.app',
       /^https:\/\/construction-app.*\.vercel\.app$/,
+      /^https:\/\/construction-website.*\.vercel\.app$/,
       'capacitor://localhost',
       'ionic://localhost',
       'http://localhost'
