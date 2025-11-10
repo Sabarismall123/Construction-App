@@ -17,6 +17,10 @@ export interface IResource extends Document {
   warrantyExpiry?: Date;
   maintenanceSchedule?: Date;
   notes: string;
+  // Labor-specific fields
+  mobileNumber?: string;
+  aadharNumber?: string;
+  allocatedQuantity?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,7 +72,7 @@ const ResourceSchema = new Schema<IResource>({
   },
   location: {
     type: String,
-    required: [true, 'Location is required'],
+    required: false, // Made optional - validation handled in controller
     trim: true,
     maxlength: [200, 'Location cannot be more than 200 characters']
   },
@@ -100,6 +104,24 @@ const ResourceSchema = new Schema<IResource>({
     type: String,
     trim: true,
     maxlength: [1000, 'Notes cannot be more than 1000 characters']
+  },
+  // Labor-specific fields
+  mobileNumber: {
+    type: String,
+    trim: true,
+    maxlength: [10, 'Mobile number must be 10 digits'],
+    match: [/^[0-9]{10}$/, 'Mobile number must be 10 digits']
+  },
+  aadharNumber: {
+    type: String,
+    trim: true,
+    maxlength: [12, 'Aadhar number must be 12 digits'],
+    match: [/^[0-9]{12}$/, 'Aadhar number must be 12 digits']
+  },
+  allocatedQuantity: {
+    type: Number,
+    min: [0, 'Allocated quantity cannot be negative'],
+    default: 0
   }
 }, {
   timestamps: true

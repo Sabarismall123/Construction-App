@@ -91,3 +91,6 @@ export const authorize = (...roles: string[]) => {
     next();
   };
 };
+
+// Alias for authorize for consistency
+export const restrictTo = authorize;

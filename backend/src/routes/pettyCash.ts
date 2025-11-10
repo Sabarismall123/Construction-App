@@ -33,8 +33,8 @@ router.get('/:id', [
 
 // @route   POST /api/petty-cash
 // @desc    Create new petty cash entry
-// @access  Public (for testing)
-router.post('/', [
+// @access  Private
+router.post('/', protect, [
   body('projectId').isMongoId().withMessage('Invalid project ID'),
   body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),
   body('description').optional().trim().isLength({ min: 1, max: 200 }).withMessage('Description must be between 1 and 200 characters'),
@@ -47,8 +47,8 @@ router.post('/', [
 
 // @route   PUT /api/petty-cash/:id
 // @desc    Update petty cash entry
-// @access  Public (for testing)
-router.put('/:id', [
+// @access  Private
+router.put('/:id', protect, [
   param('id').isMongoId().withMessage('Invalid petty cash entry ID'),
   body('projectId').optional().isMongoId().withMessage('Invalid project ID'),
   body('amount').optional().isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),

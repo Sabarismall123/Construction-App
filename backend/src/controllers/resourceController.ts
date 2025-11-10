@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 import Resource from '../models/Resource';
+import Labour from '../models/Labour';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -102,8 +104,18 @@ export const createResource = async (req: AuthRequest, res: Response, next: Next
       return;
     }
 
+    // Validate location for material type
+    if (req.body.type === 'material' && !req.body.location?.trim()) {
+      res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: [{ path: 'location', msg: 'Location is required for material' }]
+      });
+      return;
+    }
+
     // Map frontend fields to backend model
-    const resourceData = {
+    const resourceData: any = {
       name: req.body.name,
       type: req.body.type === 'labor' ? 'other' : req.body.type, // Map labor to other, or keep as is
       category: req.body.category || req.body.type || 'general',
@@ -112,17 +124,57 @@ export const createResource = async (req: AuthRequest, res: Response, next: Next
       unit: req.body.unit || 'unit',
       costPerUnit: req.body.costPerUnit || req.body.cost || 0,
       supplier: req.body.supplier || '',
-      location: req.body.location || '',
+      location: req.body.location || undefined, // Optional for labor
       status: req.body.status || 'available',
       assignedTo: req.body.assignedTo || undefined,
       projectId: req.body.projectId || undefined,
       purchaseDate: req.body.purchaseDate ? new Date(req.body.purchaseDate) : new Date(),
       warrantyExpiry: req.body.warrantyExpiry ? new Date(req.body.warrantyExpiry) : undefined,
       maintenanceSchedule: req.body.maintenanceSchedule ? new Date(req.body.maintenanceSchedule) : undefined,
-      notes: req.body.notes || ''
+      notes: req.body.notes || '',
+      allocatedQuantity: req.body.allocatedQuantity || 0
     };
 
+    // Add labor-specific fields if type is labor
+    if (req.body.type === 'labor') {
+      resourceData.mobileNumber = req.body.mobileNumber || undefined;
+      resourceData.aadharNumber = req.body.aadharNumber || undefined;
+    }
+
     const resource = await Resource.create(resourceData);
+
+    // If this is a labor resource, also create a Labour profile for attendance
+    if (req.body.type === 'labor') {
+      try {
+        const labourData: any = {
+          name: req.body.name.trim(),
+          mobileNumber: req.body.mobileNumber?.trim(),
+          projectId: req.body.projectId ? new mongoose.Types.ObjectId(req.body.projectId) : undefined,
+          isActive: true
+        };
+
+        // Add createdBy if user is authenticated
+        if (req.user && (req.user._id || req.user.id)) {
+          labourData.createdBy = new mongoose.Types.ObjectId(req.user._id || req.user.id);
+        }
+
+        // Check if labour with same name and project already exists
+        const existingLabour = await Labour.findOne({
+          name: labourData.name,
+          projectId: labourData.projectId || null
+        });
+
+        if (!existingLabour) {
+          await Labour.create(labourData);
+          console.log('✅ Created Labour profile for labor resource:', resource._id);
+        } else {
+          console.log('ℹ️ Labour profile already exists for:', labourData.name);
+        }
+      } catch (labourError) {
+        // Log error but don't fail the resource creation
+        console.error('⚠️ Failed to create Labour profile:', labourError);
+      }
+    }
 
     const populatedResource = await Resource.findById(resource._id)
       .populate('projectId', 'name')
@@ -171,6 +223,7 @@ export const updateResource = async (req: Request, res: Response, next: NextFunc
     if (req.body.assignedTo !== undefined) updateData.assignedTo = req.body.assignedTo;
     if (req.body.projectId !== undefined) updateData.projectId = req.body.projectId;
     if (req.body.purchaseDate !== undefined) updateData.purchaseDate = new Date(req.body.purchaseDate);
+    if (req.body.allocatedQuantity !== undefined) updateData.allocatedQuantity = req.body.allocatedQuantity;
     if (req.body.warrantyExpiry !== undefined) {
       updateData.warrantyExpiry = req.body.warrantyExpiry ? new Date(req.body.warrantyExpiry) : null;
     }
@@ -178,6 +231,12 @@ export const updateResource = async (req: Request, res: Response, next: NextFunc
       updateData.maintenanceSchedule = req.body.maintenanceSchedule ? new Date(req.body.maintenanceSchedule) : null;
     }
     if (req.body.notes !== undefined) updateData.notes = req.body.notes;
+    
+    // Add labor-specific fields if type is labor
+    if (req.body.type === 'labor') {
+      if (req.body.mobileNumber !== undefined) updateData.mobileNumber = req.body.mobileNumber;
+      if (req.body.aadharNumber !== undefined) updateData.aadharNumber = req.body.aadharNumber;
+    }
 
     const resource = await Resource.findByIdAndUpdate(
       req.params.id,
