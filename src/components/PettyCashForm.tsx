@@ -17,7 +17,7 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
     projectId: '',
     amount: '',
     description: '',
-    category: 'miscellaneous' as PettyCash['category'],
+    category: 'other' as PettyCash['category'],
     date: '',
     paidTo: '',
     attachment: ''
@@ -35,12 +35,53 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
 
   useEffect(() => {
     if (expense) {
+      // Map old category values to new ones
+      let category = expense.category || 'other';
+      if (category === 'food') category = 'meals';
+      if (category === 'tools') category = 'supplies';
+      if (category === 'miscellaneous' || category === 'emergency') category = 'other';
+      
+      // Parse date properly - handle various formats
+      let dateValue = formatDate(new Date(), 'yyyy-MM-dd');
+      if (expense.date) {
+        try {
+          if (typeof expense.date === 'string') {
+            // Try to parse the date string
+            const parsedDate = new Date(expense.date);
+            if (!isNaN(parsedDate.getTime())) {
+              dateValue = formatDate(parsedDate, 'yyyy-MM-dd');
+            } else {
+              // If parsing fails, try to handle DD-MM-YYYY format
+              const parts = expense.date.split('-');
+              if (parts.length === 3) {
+                // Check if it's DD-MM-YYYY format
+                if (parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
+                  const day = parseInt(parts[0], 10);
+                  const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+                  const year = parseInt(parts[2], 10);
+                  const dateObj = new Date(year, month, day);
+                  if (!isNaN(dateObj.getTime())) {
+                    dateValue = formatDate(dateObj, 'yyyy-MM-dd');
+                  }
+                }
+              }
+            }
+          } else {
+            // If it's a Date object
+            dateValue = formatDate(new Date(expense.date), 'yyyy-MM-dd');
+          }
+        } catch (error) {
+          console.error('Error parsing date:', error);
+          dateValue = formatDate(new Date(), 'yyyy-MM-dd');
+        }
+      }
+      
       setFormData({
         projectId: expense.projectId || '',
         amount: expense.amount.toString(),
         description: expense.description || '',
-        category: expense.category || 'miscellaneous',
-        date: expense.date ? (typeof expense.date === 'string' ? expense.date : formatDate(new Date(expense.date), 'yyyy-MM-dd')) : formatDate(new Date(), 'yyyy-MM-dd'),
+        category: category as PettyCash['category'],
+        date: dateValue,
         paidTo: expense.paidTo || '',
         attachment: expense.attachment || ''
       });
@@ -50,7 +91,7 @@ const PettyCashForm: React.FC<PettyCashFormProps> = ({ expense, onClose }) => {
         projectId: '',
         amount: '',
         description: '',
-        category: 'miscellaneous',
+        category: 'other',
         date: formatDate(new Date(), 'yyyy-MM-dd'),
         paidTo: '',
         attachment: ''

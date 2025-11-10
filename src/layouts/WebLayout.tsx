@@ -10,7 +10,7 @@ const WebLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100 dark:bg-gray-900">
+    <div className="h-screen flex overflow-hidden">
       {/* Sidebar */}
       <Sidebar 
         isOpen={sidebarOpen} 
@@ -27,7 +27,7 @@ const WebLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         />
 
         {/* Page content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto">
           <div className="container mx-auto px-4 py-6">
             {children || <Outlet />}
           </div>

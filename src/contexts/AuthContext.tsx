@@ -98,8 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('construction_user', JSON.stringify(userData));
         localStorage.setItem('construction_token', response.token);
         
-        // Check for assigned tasks and show notifications
+        // Check for assigned tasks and issues and show notifications
         checkAssignedTasks(userData.id);
+        checkAssignedIssues(userData.id);
         
         setIsLoading(false);
         return true;
@@ -193,10 +194,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Check for issues assigned to the logged-in user and show notifications
+  const checkAssignedIssues = async (userId: string) => {
+    try {
+      // Get all issues
+      const issuesResponse = await apiService.getIssues();
+      const issues = (issuesResponse as any).data || issuesResponse;
+      
+      if (!Array.isArray(issues)) return;
+      
+      // Filter issues assigned to this user - normalize IDs for comparison
+      const assignedIssues = issues.filter((issue: any) => {
+        const issueAssignedTo = issue.assignedTo?._id || issue.assignedTo || issue.assignedTo;
+        const issueAssignedToStr = issueAssignedTo?.toString() || '';
+        const userIdStr = userId?.toString() || '';
+        return issueAssignedToStr === userIdStr;
+      });
+      
+      // Show notifications for assigned issues
+      if (assignedIssues.length > 0) {
+        // Show a summary notification first
+        toast.success(
+          `You have ${assignedIssues.length} issue${assignedIssues.length > 1 ? 's' : ''} assigned to you!`,
+          { duration: 3000 }
+        );
+        
+        // Add notifications to DataContext for the notification panel
+        const addNotification = (window as any).__dataContextAddNotification;
+        if (addNotification) {
+          assignedIssues.forEach((issue: any) => {
+            const issueTitle = issue.title || 'Untitled Issue';
+            const reportedByName = issue.reportedByName || issue.reportedBy?.name || 'Manager';
+            
+            addNotification({
+              title: 'New Issue Assigned',
+              message: `Issue "${issueTitle}" has been assigned to you by ${reportedByName}`,
+              type: 'info',
+              read: false,
+              userId: userId
+            });
+          });
+        }
+        
+        // Show individual toast notifications for each issue
+        assignedIssues.forEach((issue: any, index: number) => {
+          setTimeout(() => {
+            const issueTitle = issue.title || 'Untitled Issue';
+            const reportedByName = issue.reportedByName || issue.reportedBy?.name || 'Manager';
+            
+            toast(
+              `🚨 Issue "${issueTitle}" is assigned from ${reportedByName}`,
+              {
+                duration: 5000,
+                icon: '🚨',
+                style: {
+                  background: '#f59e0b',
+                  color: '#fff',
+                },
+              }
+            );
+          }, index * 1000); // Stagger notifications by 1 second
+        });
+      }
+    } catch (error) {
+      console.error('Error checking assigned issues:', error);
+      // Don't show error to user, just log it
+    }
+  };
+
   const hasPermission = (module: string): boolean => {
     if (!user) return false;
-    const permissions = MODULE_PERMISSIONS[user.role];
-    return permissions.includes(module);
+    // Use default permissions from constants
+    const defaultPermissions = MODULE_PERMISSIONS[user.role] || [];
+    return defaultPermissions.includes(module);
   };
 
   const hasRole = (roles: UserRole[]): boolean => {

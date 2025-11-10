@@ -109,11 +109,23 @@ export interface Attendance {
   overtimeHours?: number;
   notes?: string;
   employeeId?: string;
+  attachments?: string[]; // File attachment IDs
   createdAt: Date;
   updatedAt: Date;
 }
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day' | 'overtime';
+
+export interface Labour {
+  id: string;
+  name: string;
+  mobileNumber?: string;
+  labourType?: string;
+  projectId?: string; // Default project
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface InventoryItem {
   id: string;
