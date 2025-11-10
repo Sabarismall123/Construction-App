@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, File, Image, Trash2, Download } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { Task } from '@/types';
-import { formatDate } from '@/utils';
+import { formatDate, validateDateRange } from '@/utils';
 import { TASK_STATUSES, PRIORITIES } from '@/constants';
 import { toast } from 'react-hot-toast';
 import { apiService } from '@/services/api';
@@ -27,8 +26,7 @@ interface FileAttachment {
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
-  const { addTask, updateTask, projects, users } = useData();
-  const { user } = useAuth();
+  const { addTask, updateTask, projects } = useData();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -41,7 +39,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
     attachments: [] as string[]
   });
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
-  const [photoAttachments, setPhotoAttachments] = useState<string[]>([]); // Store photo file IDs
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -50,8 +47,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
       setFormData({
         title: task.title,
         assignedTo: task.assignedTo,
-        priority: task.priority as typeof formData.priority,
-        status: task.status as typeof formData.status,
+        priority: task.priority,
+        status: task.status,
         dueDate: task.dueDate,
         description: task.description,
         projectId: task.projectId,
@@ -113,15 +110,14 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
         dueDate: formData.dueDate,
         description: formData.description.trim(),
         projectId: formData.projectId,
-        attachments: [...attachments.map(a => a.id), ...photoAttachments], // Store file IDs from both regular attachments and photos
-        createdBy: user?.id || null // Include creator ID
+        attachments: attachments.map(a => a.id) // Store file IDs
       };
 
       if (task) {
-        await updateTask(task.id, taskData);
+        updateTask(task.id, taskData);
         toast.success('Task updated successfully');
       } else {
-        await addTask(taskData);
+        addTask(taskData);
         toast.success('Task created successfully');
       }
 
@@ -300,20 +296,15 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
                   <label htmlFor="assignedTo" className="label">
                     Assigned To *
                   </label>
-                  <select
+                  <input
+                    type="text"
                     id="assignedTo"
                     name="assignedTo"
                     className={errors.assignedTo ? 'input-error' : 'input'}
                     value={formData.assignedTo}
                     onChange={handleChange}
-                  >
-                    <option value="">Select a user</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name} ({user.email})
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Enter assignee name"
+                  />
                   {errors.assignedTo && <p className="form-error">{errors.assignedTo}</p>}
                 </div>
               </div>
@@ -399,32 +390,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
 
               {/* Photo Capture with Timestamps */}
               <PhotoCapture
-                onPhotosCaptured={async (photos) => {
+                onPhotosCaptured={(photos) => {
                   console.log('Photos captured:', photos);
-                  // Upload photos and save to task attachments
-                  try {
-                    const uploadedFileIds: string[] = [];
-                    for (const photo of photos) {
-                      try {
-                        // Upload photo file
-                        const response = await apiService.uploadFile(
-                          photo.file,
-                          task?.id || undefined,
-                          formData.projectId || undefined
-                        );
-                        if ((response as any).data?._id) {
-                          uploadedFileIds.push((response as any).data._id);
-                        }
-                      } catch (error) {
-                        console.error('Failed to upload photo:', error);
-                      }
-                    }
-                    setPhotoAttachments(uploadedFileIds);
-                    toast.success(`${photos.length} photo(s) uploaded successfully`);
-                  } catch (error) {
-                    console.error('Error uploading photos:', error);
-                    toast.error('Failed to upload some photos');
-                  }
+                  // Handle photo capture - you can integrate this with your existing file upload logic
                 }}
                 projectId={formData.projectId}
                 taskId={task?.id}

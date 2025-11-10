@@ -1,0 +1,1237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    height: 100%;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+    height: 100svh; /* Small viewport height for mobile */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white;
+    height: 100%;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+    height: 100svh; /* Small viewport height for mobile */
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+  }
+
+  #root {
+    height: 100%;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+    height: 100svh; /* Small viewport height for mobile */
+    min-height: 100vh;
+    min-height: 100dvh;
+    min-height: 100svh;
+  }
+}
+
+/* Desktop/Web-only fixes: keep mobile untouched */
+/* IMPORTANT: All desktop fixes are scoped to min-width: 1024px to NOT affect mobile */
+@media (min-width: 1024px) {
+  /* Remove mobile height constraints on desktop to avoid cramped layouts */
+  html, body, #root {
+    height: auto !important;
+    min-height: 100% !important;
+    max-height: none !important;
+  }
+
+  /* Allow normal document flow and scrolling on desktop */
+  main {
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
+  /* Action buttons should not be full width on desktop - EXCEPT in forms and login pages */
+  .btn:not(form .btn):not(.w-full):not([class*="login"] .btn),
+  button.btn:not(form button):not(.w-full):not([class*="login"] button),
+  a.btn:not(form a):not(.w-full):not([class*="login"] a) {
+    width: auto !important;
+    display: inline-flex !important;
+  }
+
+  /* ALWAYS keep full width for form buttons and inputs (works on both mobile and desktop) */
+  form .btn.w-full,
+  form button.w-full,
+  form input.w-full,
+  form select.w-full,
+  form textarea.w-full {
+    width: 100% !important;
+  }
+
+  /* Common desktop paddings for content cards */
+  .card-body {
+    padding: 1.25rem 1.5rem !important; /* 20px 24px */
+  }
+
+  /* Inputs/selects default to content width on desktop - EXCEPT in forms */
+  input.w-full:not(form input),
+  select.w-full:not(form select),
+  textarea.w-full:not(form textarea) {
+    width: auto !important;
+  }
+
+  /* Keep proper spacing for forms and login pages */
+  form .space-y-6 > * + *,
+  form .space-y-4 > * + *,
+  form .space-y-3 > * + *,
+  form .space-y-2 > * + * {
+    margin-top: inherit !important;
+  }
+
+  /* Login page specific desktop fixes - ensure proper alignment */
+  form input[type="email"],
+  form input[type="password"],
+  form input[type="text"] {
+    width: 100% !important;
+  }
+
+  form button[type="submit"] {
+    width: 100% !important;
+  }
+  
+  /* Eye icon alignment on desktop - position at right corner */
+  form .relative input[type="password"] + button,
+  form .relative input[type="text"][name="password"] + button {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    right: 0.5rem !important;
+    width: 2rem !important;
+    height: 2rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: 10 !important;
+  }
+  
+  /* Ensure eye icon SVG is centered on desktop */
+  form .relative input[type="password"] + button svg,
+  form .relative input[type="text"][name="password"] + button svg {
+    display: block !important;
+    margin: 0 !important;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary-600 text-white border-primary-600 hover:bg-primary-700 focus:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-600 text-white border-red-600 hover:bg-red-700 focus:ring-red-500;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  .input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-500;
+  }
+  
+  .input-error {
+    @apply input border-red-300 focus:ring-red-500 focus:border-red-500;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700;
+  }
+  
+  .card-header {
+    @apply px-6 py-4 border-b border-gray-200 dark:border-gray-700;
+  }
+  
+  .card-body {
+    @apply px-6 py-4;
+  }
+  
+  .card-footer {
+    @apply px-6 py-4 border-t border-gray-200 bg-gray-50;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .status-badge {
+    @apply badge;
+  }
+  
+  .priority-badge {
+    @apply badge;
+  }
+  
+  .table {
+    @apply min-w-full divide-y divide-gray-200;
+  }
+  
+  .table-header {
+    @apply bg-gray-50 dark:bg-gray-700;
+  }
+  
+  .table-header-cell {
+    @apply px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+  }
+  
+  .table-body {
+    @apply bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700;
+  }
+  
+  .table-row {
+    @apply hover:bg-gray-50 dark:hover:bg-gray-700;
+  }
+  
+  .table-cell {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white;
+  }
+  
+  .sidebar {
+    @apply fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out overflow-y-auto dark:bg-gray-800;
+    position: fixed !important;
+    overflow-x: visible !important;
+  }
+  
+  .sidebar nav {
+    overflow-x: visible !important;
+  }
+  
+  .sidebar-mobile {
+    @apply fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300 ease-in-out;
+  }
+  
+  .sidebar-open {
+    @apply translate-x-0;
+  }
+  
+  .sidebar-closed {
+    @apply -translate-x-full;
+  }
+  
+  .sidebar-item {
+    @apply flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  
+  .sidebar-item-active {
+    @apply sidebar-item bg-primary-100 text-primary-700;
+  }
+  
+  .sidebar-submenu {
+    @apply ml-8 space-y-1 mt-1;
+  }
+  
+  .sidebar-submenu-item {
+    @apply flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors;
+  }
+  
+  .sidebar-submenu-item-active {
+    @apply sidebar-submenu-item bg-primary-50 text-primary-700;
+  }
+  
+  .mobile-nav {
+    @apply fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200;
+  }
+  
+  .mobile-nav-item {
+    @apply flex flex-col items-center justify-center py-2 px-3 text-xs font-medium text-gray-500 hover:text-primary-600 transition-colors;
+  }
+  
+  .mobile-nav-item-active {
+    @apply mobile-nav-item text-primary-600;
+  }
+  
+  .chart-container {
+    @apply w-full h-64;
+  }
+  
+  .stat-card {
+    @apply card p-6;
+  }
+  
+  .stat-value {
+    @apply text-2xl font-bold text-gray-900 dark:text-white;
+  }
+  
+  .stat-label {
+    @apply text-sm font-medium text-gray-500 dark:text-gray-400;
+  }
+  
+  .stat-change {
+    @apply text-sm font-medium;
+  }
+  
+  .stat-change-positive {
+    @apply stat-change text-green-600;
+  }
+  
+  .stat-change-negative {
+    @apply stat-change text-red-600;
+  }
+  
+  .loading-spinner {
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+  }
+  
+  .empty-state {
+    @apply text-center py-12;
+  }
+  
+  .empty-state-icon {
+    @apply mx-auto h-12 w-12 text-gray-400;
+  }
+  
+  .empty-state-title {
+    @apply mt-2 text-sm font-medium text-gray-900;
+  }
+  
+  .empty-state-description {
+    @apply mt-1 text-sm text-gray-500;
+  }
+  
+  .modal-overlay {
+    @apply fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75 transition-opacity;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  
+  .modal {
+    @apply relative mx-auto max-w-lg transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all;
+  }
+  
+  .modal-header {
+    @apply px-6 py-4 border-b border-gray-200 flex items-center justify-between;
+  }
+  
+  .modal-title {
+    @apply text-lg font-medium text-gray-900;
+  }
+  
+  .modal-body {
+    @apply px-6 py-4;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+  
+  .modal-footer {
+    @apply px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3;
+  }
+  
+  /* Mobile-specific modal fixes */
+  @media (max-width: 1023px) {
+    .modal-overlay {
+      padding: 0.5rem;
+      padding-bottom: 6rem; /* Space for bottom navigation (z-30) */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 50;
+    }
+    
+    .modal {
+      max-height: calc(100vh - 7rem);
+      max-height: calc(100dvh - 7rem);
+      max-height: calc(100svh - 7rem);
+      height: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin: 0 auto;
+      margin-bottom: 1rem;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .modal-header {
+      flex-shrink: 0;
+      padding: 0.75rem 1rem;
+    }
+    
+    .modal-body {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: 0.75rem 1rem;
+      padding-bottom: 0.5rem;
+      min-height: 0;
+      max-height: calc(100vh - 16rem);
+      max-height: calc(100dvh - 16rem);
+      max-height: calc(100svh - 16rem);
+    }
+    
+    .modal-footer {
+      flex-shrink: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 0.75rem 1rem;
+      padding-bottom: 0.75rem;
+      margin-bottom: 0;
+      display: flex;
+      flex-direction: row;
+      gap: 0.5rem;
+      z-index: 10;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+      position: relative;
+      width: 100%;
+      min-height: 3.5rem;
+    }
+    
+    .modal-footer button {
+      flex: 1;
+      margin: 0 !important;
+      min-width: 0;
+    }
+  }
+  
+  .form-group {
+    @apply mb-4;
+  }
+  
+  .form-row {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+  }
+  
+  /* Mobile-specific form spacing */
+  @media (max-width: 1023px) {
+    .form-group {
+      margin-bottom: 0.25rem !important;
+    }
+    
+    .form-row {
+      gap: 0.5rem !important;
+      margin-bottom: 0.25rem !important;
+    }
+    
+    .form-row .form-group {
+      margin-bottom: 0.25rem !important;
+    }
+    
+    .modal-body .space-y-2 > * + * {
+      margin-top: 0.25rem !important;
+    }
+    
+    .modal-body .space-y-3 > * + * {
+      margin-top: 0.25rem !important;
+    }
+    
+    .modal-body .space-y-4 > * + * {
+      margin-top: 0.25rem !important;
+    }
+    
+    /* Drastically reduce gaps between form rows */
+    .modal-body .form-row + .form-row {
+      margin-top: 0.25rem !important;
+    }
+    
+    .modal-body .form-group + .form-group {
+      margin-top: 0.25rem !important;
+    }
+    
+    /* Reduce label spacing */
+    .modal-body .label {
+      margin-bottom: 0.125rem !important;
+    }
+    
+    /* Reduce input spacing */
+    .modal-body .input,
+    .modal-body select {
+      margin-bottom: 0 !important;
+    }
+    
+    /* Ensure description field is visible and properly sized */
+    .modal-body textarea {
+      min-height: 60px !important;
+      max-height: 100px !important;
+      display: block !important;
+      visibility: visible !important;
+      width: 100% !important;
+      margin-bottom: 0.5rem !important;
+    }
+    
+    /* Ensure description field is above footer */
+    .modal-body .form-group:last-child {
+      margin-bottom: 1rem !important;
+      padding-bottom: 0.5rem !important;
+    }
+    
+    /* Reduce label margin on mobile */
+    .form-group .label,
+    label {
+      margin-bottom: 0.25rem !important;
+    }
+    
+    /* Fix mobile number field alignment */
+    .flex.items-stretch > div:first-child {
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      min-height: 2.5rem !important;
+    }
+    
+    /* Ensure all inputs have consistent height */
+    .input {
+      min-height: 2.5rem !important;
+      height: 2.5rem !important;
+    }
+  }
+  
+  .form-error {
+    @apply mt-1 text-sm text-red-600;
+  }
+  
+  .search-input {
+    @apply input pl-10;
+  }
+  
+  .search-icon {
+    @apply absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400;
+  }
+  
+  .filter-dropdown {
+    @apply relative inline-block text-left;
+  }
+  
+  .filter-menu {
+    @apply absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none;
+  }
+  
+  .filter-item {
+    @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100;
+  }
+  
+  .pagination {
+    @apply flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6;
+  }
+  
+  .pagination-info {
+    @apply flex flex-1 justify-between sm:hidden;
+  }
+  
+  .pagination-desktop {
+    @apply hidden sm:flex sm:flex-1 sm:items-center sm:justify-between;
+  }
+  
+  .pagination-button {
+    @apply relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50;
+  }
+  
+  .pagination-button-disabled {
+    @apply pagination-button opacity-50 cursor-not-allowed;
+  }
+  
+  .pagination-button-active {
+    @apply pagination-button bg-primary-600 text-white border-primary-600;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Mobile-specific optimizations - CRITICAL: These styles MUST work on mobile */
+  @media (max-width: 1023px) {
+    /* Ensure mobile viewport constraints */
+    .mobile-optimized {
+      height: calc(100vh - 120px);
+      overflow: hidden;
+    }
+    
+    .mobile-card {
+      @apply p-3 mb-3;
+    }
+    
+    .mobile-text-sm {
+      @apply text-sm;
+    }
+    
+    .mobile-grid-2 {
+      @apply grid grid-cols-2 gap-3;
+    }
+    
+    /* Prevent horizontal overflow on mobile */
+    * {
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    
+    .grid {
+      width: 100% !important;
+    }
+    
+    .flex {
+      min-width: 0 !important;
+    }
+    
+    /* Ensure text doesn't overflow */
+    .truncate {
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+    
+    /* Force all containers to respect width on mobile */
+    div {
+      max-width: 100% !important;
+    }
+    
+    /* Grid specific fixes for mobile */
+    .grid-cols-1 {
+      grid-template-columns: 1fr !important;
+      gap: 1rem !important;
+      width: 100% !important;
+    }
+    
+    /* Button fixes - ALWAYS full width on mobile */
+    .btn,
+    button.btn,
+    a.btn {
+      width: 100% !important;
+      max-width: 100% !important;
+      justify-content: center !important;
+    }
+    
+    /* Form inputs ALWAYS full width on mobile */
+    form input,
+    form select,
+    form textarea,
+    form button {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
+    /* Login page - ensure full width on mobile */
+    form .input,
+    form .btn-primary {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
+    /* Fix eye icon alignment in password field on mobile - MUST be at right edge */
+    form .relative input[type="password"] + button,
+    form .relative input[type="text"][name="password"] + button {
+      position: absolute !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      right: 0.75rem !important;
+      width: 2rem !important;
+      height: 2rem !important;
+      min-width: 2rem !important;
+      min-height: 2rem !important;
+      max-width: 2rem !important;
+      max-height: 2rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      z-index: 10 !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      box-sizing: border-box !important;
+    }
+    
+    /* Ensure input padding doesn't interfere with icon on mobile */
+    form .relative input[type="password"],
+    form .relative input[type="text"][name="password"] {
+      padding-right: 2.5rem !important;
+    }
+    
+    /* Ensure eye icon SVG is properly centered on mobile */
+    form .relative input[type="password"] + button svg,
+    form .relative input[type="text"][name="password"] + button svg {
+      display: block !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
+    }
+    
+    /* Icon container fixes */
+    .flex-shrink-0 {
+      flex-shrink: 0 !important;
+    }
+    
+    /* Force viewport width */
+    body {
+      overflow-x: hidden !important;
+      max-width: 100vw !important;
+    }
+    
+    /* Container fixes */
+    .w-full {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
+    /* Card body padding */
+    .card-body {
+      padding: 1rem !important;
+    }
+    
+    /* Space between elements */
+    .space-y-4 > * + * {
+      margin-top: 1rem !important;
+    }
+    
+    .space-y-3 > * + * {
+      margin-top: 0.75rem !important;
+    }
+    
+    .space-y-2 > * + * {
+      margin-top: 0.5rem !important;
+    }
+    
+    /* Dropdown z-index fixes */
+    select {
+      z-index: 10 !important;
+      position: relative !important;
+    }
+    
+    select:focus {
+      z-index: 20 !important;
+    }
+    
+    /* Ensure dropdowns don't overlap content */
+    .relative {
+      position: relative !important;
+    }
+    
+    .z-10 {
+      z-index: 10 !important;
+    }
+    
+    /* Mobile dropdown positioning fixes */
+    select {
+      max-height: 200px !important;
+      overflow-y: auto !important;
+      position: relative !important;
+    }
+    
+    /* Ensure dropdowns stay within viewport */
+    .card-body {
+      position: relative !important;
+      z-index: 1 !important;
+      overflow: visible !important;
+    }
+    
+    /* Fix dropdown overflow on mobile */
+    select option {
+      padding: 8px 12px !important;
+      font-size: 14px !important;
+      max-height: 40px !important;
+    }
+    
+    /* Ensure proper spacing for mobile dropdowns */
+    .space-y-3 > * + * {
+      margin-top: 0.75rem !important;
+      position: relative !important;
+    }
+    
+    /* Mobile viewport constraints */
+    .card {
+      overflow: visible !important;
+    }
+    
+    /* Ensure dropdowns don't extend beyond viewport */
+    select:focus {
+      position: relative !important;
+      z-index: 50 !important;
+    }
+    
+    /* Mobile-specific dropdown styling */
+    @media (max-width: 768px) {
+      select {
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 12px center !important;
+        background-size: 16px !important;
+        padding-right: 40px !important;
+      }
+      
+      /* Custom dropdown text visibility */
+      .mobile-dropdown-option {
+        color: #1f2937 !important;
+        background-color: white !important;
+        font-weight: 400 !important;
+      }
+      
+      .mobile-dropdown-option:hover {
+        background-color: #f3f4f6 !important;
+        color: #1f2937 !important;
+      }
+      
+      .mobile-dropdown-option.selected {
+        background-color: #dbeafe !important;
+        color: #1e40af !important;
+        font-weight: 600 !important;
+      }
+      
+      /* Force text visibility in dropdowns */
+      .mobile-dropdown-option * {
+        color: inherit !important;
+      }
+      
+      /* Override any conflicting styles */
+      .mobile-dropdown-option {
+        color: #1f2937 !important;
+        background-color: white !important;
+      }
+      
+      .mobile-dropdown-option.selected {
+        color: #1e40af !important;
+        background-color: #dbeafe !important;
+      }
+      
+      /* Force visibility with maximum specificity */
+      div[class*="mobile-dropdown"] button {
+        color: #1f2937 !important;
+        background-color: white !important;
+      }
+      
+      div[class*="mobile-dropdown"] button.selected {
+        color: #1e40af !important;
+        background-color: #dbeafe !important;
+      }
+      
+      /* Override Tailwind classes */
+      .text-primary-700 {
+        color: #1e40af !important;
+      }
+      
+      .bg-primary-50 {
+        background-color: #dbeafe !important;
+      }
+    }
+  }
+}
+
+/* Mobile viewport height fixes for all devices */
+@media (max-width: 768px) {
+  /* Fix for mobile viewport height issues */
+  html, body, #root {
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: 100svh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    min-height: 100svh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    max-height: 100svh !important;
+  }
+
+  /* Ensure mobile layout uses full screen */
+  .mobile-layout {
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: 100svh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    min-height: 100svh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    max-height: 100svh !important;
+  }
+
+  /* Fix for content collapsing */
+  .mobile-content {
+    min-height: calc(100vh - 120px) !important;
+    min-height: calc(100dvh - 120px) !important;
+    min-height: calc(100svh - 120px) !important;
+    /* Remove max-height to allow content to scroll properly */
+    max-height: none !important;
+  }
+
+  /* Fixed position dropdowns should stay within viewport */
+  .fixed {
+    position: fixed !important;
+    z-index: 100 !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+  
+  /* Ensure dropdowns don't get cut off */
+  div[class*="fixed"] {
+    max-height: calc(100vh - 4rem) !important;
+    max-height: calc(100dvh - 4rem) !important;
+    max-height: calc(100svh - 4rem) !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Backdrop overlay for dropdowns */
+  .fixed.inset-0 {
+    z-index: 90 !important;
+  }
+  
+  /* Header dropdown positioning */
+  header + div[class*="fixed"],
+  header ~ div[class*="fixed"] {
+    top: 3.5rem !important; /* 56px - header height */
+  }
+
+  /* Ensure proper flex behavior */
+  .flex-1 {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+  }
+
+  /* Fix for main content area */
+  main {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    max-height: calc(100vh - 80px) !important;
+    max-height: calc(100dvh - 80px) !important;
+    max-height: calc(100svh - 80px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Additional mobile device fixes */
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  /* Prevent zoom on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+  }
+
+  /* Fix for iOS Safari */
+  @supports (-webkit-touch-callout: none) {
+    html, body, #root {
+      height: -webkit-fill-available !important;
+    }
+    
+    .mobile-layout {
+      height: -webkit-fill-available !important;
+    }
+  }
+
+  /* Fix for Android devices */
+  @media screen and (max-height: 600px) {
+    .mobile-content {
+      min-height: calc(100vh - 100px) !important;
+      min-height: calc(100dvh - 100px) !important;
+      min-height: calc(100svh - 100px) !important;
+    }
+  }
+
+  /* Fix for very small screens */
+  @media screen and (max-height: 500px) {
+    .mobile-content {
+      min-height: calc(100vh - 80px) !important;
+      min-height: calc(100dvh - 80px) !important;
+      min-height: calc(100svh - 80px) !important;
+    }
+  }
+
+  /* Alignment fixes for mobile devices */
+  /* Header alignment */
+  header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Ensure header content is properly aligned */
+  header > div {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Fix text alignment in header */
+  header span,
+  header h1,
+  header h2,
+  header h3 {
+    text-align: left !important;
+    vertical-align: middle !important;
+  }
+
+  /* Content alignment */
+  .mobile-content {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Fix flex items alignment */
+  .flex {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .flex-col {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .flex.items-center {
+    align-items: center !important;
+  }
+
+  .flex.items-start {
+    align-items: flex-start !important;
+  }
+
+  .flex.items-end {
+    align-items: flex-end !important;
+  }
+
+  .flex.justify-between {
+    justify-content: space-between !important;
+  }
+
+  .flex.justify-center {
+    justify-content: center !important;
+  }
+
+  .flex.justify-start {
+    justify-content: flex-start !important;
+  }
+
+  /* Button alignment */
+  button,
+  .btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Card alignment */
+  .card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .card-body {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  /* Grid alignment */
+  .grid {
+    display: grid !important;
+    align-items: start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Text alignment */
+  .text-left {
+    text-align: left !important;
+  }
+
+  .text-center {
+    text-align: center !important;
+  }
+
+  .text-right {
+    text-align: right !important;
+  }
+
+  /* Fix for flex items with text overflow */
+  .flex > * {
+    min-width: 0 !important;
+  }
+
+  /* Ensure proper vertical alignment */
+  .items-center {
+    align-items: center !important;
+  }
+
+  .items-start {
+    align-items: flex-start !important;
+  }
+
+  .items-end {
+    align-items: flex-end !important;
+  }
+
+  /* Fix for space between elements */
+  .space-x-2 > * + * {
+    margin-left: 0.5rem !important;
+  }
+
+  .space-x-3 > * + * {
+    margin-left: 0.75rem !important;
+  }
+
+  .space-x-4 > * + * {
+    margin-left: 1rem !important;
+  }
+
+  /* Fix for icon and text alignment */
+  button svg,
+  .btn svg {
+    flex-shrink: 0 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Header logo and title alignment */
+  header .flex.items-center {
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Ensure all container elements respect alignment */
+  div {
+    box-sizing: border-box !important;
+  }
+
+  /* Fix for bottom navigation alignment */
+  .fixed.bottom-0 {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  /* Fix for sidebar alignment */
+  .fixed.left-0 {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Sidebar overlay fixes */
+  .fixed.inset-0 {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: 100svh !important;
+    z-index: 40 !important;
+  }
+
+  /* Ensure sidebar doesn't push content */
+  .mobile-layout {
+    position: relative !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Prevent body scroll when sidebar is open */
+  body.sidebar-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+  }
+
+  /* Sidebar specific width constraints */
+  .fixed.left-0.h-full {
+    max-width: 85vw !important;
+    width: 320px !important;
+  }
+
+  @media (max-width: 375px) {
+    .fixed.left-0.h-full {
+      max-width: 90vw !important;
+      width: 280px !important;
+    }
+  }
+
+  /* Ensure main content doesn't shift */
+  main {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+  }
+
+  /* Prevent horizontal scroll */
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    position: relative !important;
+  }
+
+  /* Ensure content containers respect width */
+  .mobile-content,
+  .mobile-content > * {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
