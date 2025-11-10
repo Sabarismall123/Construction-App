@@ -103,6 +103,7 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error('❌ Validation errors:', errors.array());
       res.status(400).json({
         success: false,
         error: 'Validation failed',
@@ -152,22 +153,102 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       return;
     }
 
+    // Ensure attachments are properly formatted as ObjectIds
+    let attachments: mongoose.Types.ObjectId[] = [];
+    if (req.body.attachments && Array.isArray(req.body.attachments) && req.body.attachments.length > 0) {
+      console.log('📎 Received attachments:', {
+        count: req.body.attachments.length,
+        attachments: req.body.attachments,
+        types: req.body.attachments.map((id: any) => typeof id)
+      });
+      
+      attachments = req.body.attachments
+        .filter((id: any) => {
+          if (!id) return false;
+          // Convert to string first to check validity
+          const idString = id.toString();
+          const isValid = mongoose.Types.ObjectId.isValid(idString);
+          if (!isValid) {
+            console.warn('⚠️ Invalid attachment ID:', id, 'type:', typeof id);
+          }
+          return isValid;
+        })
+        .map((id: any) => {
+          // Convert to string first, then to ObjectId
+          const idString = id.toString();
+          return new mongoose.Types.ObjectId(idString);
+        });
+      
+      console.log('✅ Processed attachments as ObjectIds:', {
+        count: attachments.length,
+        attachments: attachments.map(id => id.toString())
+      });
+    } else {
+      console.log('⚠️ No attachments provided or empty array:', {
+        hasAttachments: !!req.body.attachments,
+        isArray: Array.isArray(req.body.attachments),
+        length: req.body.attachments?.length || 0
+      });
+    }
+
     const attendanceData = {
       ...req.body,
       projectName: projectName,
       date: attendanceDate,
       status: req.body.status || 'present',
       hours: req.body.hours || 0,
+      attachments: attachments.length > 0 ? attachments : (req.body.attachments || []),
       isApproved: false
     };
 
+    console.log('💾 Creating attendance with data:', {
+      employeeName: attendanceData.employeeName,
+      projectId: attendanceData.projectId,
+      attachmentsCount: attendanceData.attachments.length,
+      attachments: attendanceData.attachments
+    });
+
     const attendance = await Attendance.create(attendanceData);
+
+    console.log('✅ Attendance created:', {
+      id: attendance._id,
+      attachmentsCount: attendance.attachments?.length || 0,
+      attachments: attendance.attachments,
+      attachmentsType: attendance.attachments?.map((id: any) => typeof id)
+    });
+
+    // Verify attachments were saved by fetching the record again
+    const savedAttendance = await Attendance.findById(attendance._id);
+    console.log('🔍 Saved attendance verification:', {
+      id: savedAttendance?._id,
+      attachmentsCount: savedAttendance?.attachments?.length || 0,
+      attachments: savedAttendance?.attachments
+    });
 
     const populatedAttendance = await Attendance.findById(attendance._id)
       .populate('projectId', 'name')
       .populate('employeeId', 'name email')
       .populate('approvedBy', 'name email')
       .populate('attachments'); // Populate attachments to include file details
+
+    if (!populatedAttendance) {
+      res.status(404).json({
+        success: false,
+        error: 'Attendance record not found after creation'
+      });
+      return;
+    }
+
+    console.log('📋 Populated attendance:', {
+      id: populatedAttendance._id,
+      attachmentsCount: populatedAttendance.attachments?.length || 0,
+      attachments: populatedAttendance.attachments,
+      attachmentsDetails: populatedAttendance.attachments?.map((att: any) => ({
+        id: att._id || att.id,
+        name: att.originalName || att.filename,
+        type: typeof att
+      }))
+    });
 
     res.status(201).json({
       success: true,
@@ -199,6 +280,13 @@ export const updateAttendance = async (req: Request, res: Response, next: NextFu
       if (project) {
         req.body.projectName = project.name;
       }
+    }
+
+    // Ensure attachments are properly formatted as ObjectIds if provided
+    if (req.body.attachments && Array.isArray(req.body.attachments)) {
+      req.body.attachments = req.body.attachments
+        .filter((id: any) => id && mongoose.Types.ObjectId.isValid(id))
+        .map((id: any) => new mongoose.Types.ObjectId(id));
     }
 
     const attendance = await Attendance.findByIdAndUpdate(

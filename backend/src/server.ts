@@ -23,6 +23,7 @@ import inventoryRoutes from './routes/inventory';
 import materialIssuesRoutes from './routes/materialIssues';
 import materialReturnsRoutes from './routes/materialReturns';
 import materialConsumptionsRoutes from './routes/materialConsumptions';
+import siteTransfersRoutes from './routes/siteTransfers';
 import labourRoutes from './routes/labours';
 
 // Import middleware
@@ -132,6 +133,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/site-transfers', siteTransfersRoutes);
 app.use('/api/material-issues', materialIssuesRoutes);
 app.use('/api/material-returns', materialReturnsRoutes);
 app.use('/api/material-consumptions', materialConsumptionsRoutes);

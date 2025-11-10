@@ -100,9 +100,20 @@ export const createPettyCashEntry = async (req: AuthRequest, res: Response, next
     }
 
     // Map frontend fields to backend format
+    // requestedBy should always be the logged-in user's ID (ObjectId), not the paidTo name (string)
+    const userId = req.user?._id || req.user?.id;
+    
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        error: 'User ID is required. Please ensure you are logged in.'
+      });
+      return;
+    }
+
     const pettyCashData = {
       projectId: req.body.projectId,
-      requestedBy: req.body.requestedBy || req.body.paidTo || req.user?.id,
+      requestedBy: userId, // Always use logged-in user's ID (ObjectId)
       amount: req.body.amount,
       description: req.body.description || '',
       category: req.body.category || 'other',
@@ -147,8 +158,11 @@ export const updatePettyCashEntry = async (req: Request, res: Response, next: Ne
     // Map frontend fields to backend format
     const updateData: any = {};
     if (req.body.projectId !== undefined) updateData.projectId = req.body.projectId;
-    if (req.body.requestedBy !== undefined) updateData.requestedBy = req.body.requestedBy;
-    if (req.body.paidTo !== undefined) updateData.requestedBy = req.body.paidTo;
+    // Only update requestedBy if a valid ObjectId is provided, not a name string
+    if (req.body.requestedBy !== undefined && typeof req.body.requestedBy === 'string' && req.body.requestedBy.match(/^[0-9a-fA-F]{24}$/)) {
+      updateData.requestedBy = req.body.requestedBy;
+    }
+    // Do NOT use paidTo (which is a name string) as requestedBy (which must be an ObjectId)
     if (req.body.amount !== undefined) updateData.amount = req.body.amount;
     if (req.body.description !== undefined) updateData.description = req.body.description;
     if (req.body.category !== undefined) updateData.category = req.body.category;

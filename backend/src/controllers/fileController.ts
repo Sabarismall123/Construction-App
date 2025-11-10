@@ -102,9 +102,8 @@ export const uploadFile = async (req: AuthRequest, res: Response): Promise<void>
       }
     }
 
-    if (!taskId && !issueId) {
-      console.log('⚠️ No taskId or issueId provided for file upload');
-    }
+    // Note: For attendance photos, neither taskId nor issueId is required
+    // This is expected behavior, so we don't log a warning
 
     res.status(201).json({
       success: true,
