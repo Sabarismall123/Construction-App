@@ -28,7 +28,8 @@ const generateToken = (id: string): string => {
     }
   }
   
-  return jwt.sign({ id }, secret, { expiresIn });
+  // Use type assertion to satisfy TypeScript's strict type checking
+  return jwt.sign({ id }, secret, { expiresIn } as jwt.SignOptions);
 };
 
 // @desc    Register user
