@@ -9,14 +9,15 @@
     "build": "vite build",
     "build:check": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "postinstall": "npm uninstall @esbuild/win32-x64 @esbuild/win32-ia32 @esbuild/win32-arm64 @esbuild/darwin-x64 @esbuild/darwin-arm64 2>/dev/null || true && npm install --no-save @esbuild/linux-x64 || true"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "clsx": "^1.2.1",
-    "date-fns": "^2.29.3",
+    "date-fns": "^2.30.0",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
