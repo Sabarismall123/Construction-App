@@ -17,6 +17,7 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [currentAttendance, setCurrentAttendance] = useState<Attendance>(attendance);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [imageBlobUrls, setImageBlobUrls] = useState<Record<string, string>>({});
 
   const project = projects.find(p => p.id === currentAttendance.projectId);
 
@@ -88,12 +89,25 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
               try {
                 const response = await apiService.getFileInfo(fileId);
                 if (response.success && response.data) {
-                  return {
+                  const fileData = {
                     id: response.data._id || response.data.id || fileId,
                     originalName: response.data.originalName || response.data.name || 'Unknown file',
                     mimetype: response.data.mimetype || response.data.type || 'application/octet-stream',
                     size: response.data.size || 0
                   };
+                  
+                  // Pre-load image as blob URL for better compatibility
+                  if (fileData.mimetype.startsWith('image/')) {
+                    try {
+                      const blob = await apiService.getFile(fileData.id);
+                      const blobUrl = URL.createObjectURL(blob);
+                      setImageBlobUrls(prev => ({ ...prev, [fileData.id]: blobUrl }));
+                    } catch (blobError) {
+                      console.warn(`⚠️ Failed to pre-load image blob for ${fileData.id}:`, blobError);
+                    }
+                  }
+                  
+                  return fileData;
                 }
                 return null;
               } catch (error) {
@@ -125,6 +139,14 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
     };
 
     loadFiles();
+    
+    // Cleanup blob URLs on unmount
+    return () => {
+      setImageBlobUrls(prev => {
+        Object.values(prev).forEach(url => URL.revokeObjectURL(url));
+        return {};
+      });
+    };
   }, [currentAttendance.id, currentAttendance.attachments]);
 
   const getStatusColor = (status: string) => {
@@ -282,29 +304,61 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
                       // Use attachment ID directly if storedFile is not found
                       const fileId = storedFile?.id || attachmentId;
                       const displayName = storedFile?.originalName || fileName || 'Unknown file';
-                      const fileUrl = getFileUrl(fileId);
+                      // Use blob URL if available, otherwise fall back to direct URL
+                      const imageUrl = imageBlobUrls[fileId] || getFileUrl(fileId);
                       
                       return (
                         <div key={fileId || index} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                           {isImage ? (
                             <div className="relative">
                               <img
-                                src={fileUrl}
+                                src={imageUrl}
                                 alt={displayName}
                                 className="w-full h-64 object-cover"
                                 onError={(e) => {
-                                  console.error('Failed to load image:', fileUrl);
-                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  console.error('Failed to load image:', imageUrl);
+                                  // Try to load via blob if direct URL failed
+                                  if (!imageBlobUrls[fileId] && fileId) {
+                                    apiService.getFile(fileId).then(blob => {
+                                      const blobUrl = URL.createObjectURL(blob);
+                                      setImageBlobUrls(prev => ({ ...prev, [fileId]: blobUrl }));
+                                      (e.target as HTMLImageElement).src = blobUrl;
+                                    }).catch(err => {
+                                      console.error('Failed to load image as blob:', err);
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    });
+                                  } else {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }
                                 }}
                               />
                               <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-2">
                                 <p className="text-xs text-white truncate">{displayName}</p>
                               </div>
                               <a
-                                href={fileUrl}
+                                href={imageUrl}
                                 download={displayName}
                                 className="absolute top-2 right-2 bg-white bg-opacity-80 hover:bg-opacity-100 p-2 rounded-full transition-colors"
                                 title="Download image"
+                                onClick={async (e) => {
+                                  // For blob URLs, download properly
+                                  if (imageBlobUrls[fileId]) {
+                                    e.preventDefault();
+                                    try {
+                                      const blob = await apiService.getFile(fileId);
+                                      const url = window.URL.createObjectURL(blob);
+                                      const link = document.createElement('a');
+                                      link.href = url;
+                                      link.download = displayName;
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                      window.URL.revokeObjectURL(url);
+                                    } catch (error) {
+                                      console.error('Failed to download image:', error);
+                                    }
+                                  }
+                                }}
                               >
                                 <Download className="h-4 w-4 text-gray-700" />
                               </a>
@@ -325,7 +379,7 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
                                 </div>
                               </div>
                               <a
-                                href={fileUrl}
+                                href={getFileUrl(fileId)}
                                 download={displayName}
                                 className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                 title="Download file"

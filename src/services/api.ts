@@ -1,10 +1,12 @@
 // Detect API URL - use production backend URL for deployed frontend
 const getApiBaseUrl = () => {
-  // If VITE_API_URL is set, use it
+  // If VITE_API_URL is set, use it (ensure it ends with /api)
   const apiUrl = (import.meta as any).env?.VITE_API_URL;
   if (apiUrl) {
-    console.log('📡 Using API URL from env:', apiUrl);
-    return apiUrl;
+    // Ensure the URL ends with /api
+    const baseUrl = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+    console.log('📡 Using API URL from env:', baseUrl);
+    return baseUrl;
   }
   
   // If we're on localhost, use local backend
@@ -14,8 +16,8 @@ const getApiBaseUrl = () => {
   }
   
   // For deployed frontend (Vercel), use production backend (Render)
-  // Replace with your actual Render backend URL
-  const productionApiUrl = 'https://your-backend-url.onrender.com/api';
+  // Default to Render backend URL
+  const productionApiUrl = 'https://construction-app-pbj3.onrender.com/api';
   console.log('📡 Using production API URL:', productionApiUrl);
   return productionApiUrl;
 };
