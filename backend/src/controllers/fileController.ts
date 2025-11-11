@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import User from '../models/User';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -205,6 +207,23 @@ export const uploadMultipleFiles = async (req: AuthRequest, res: Response): Prom
 export const getFile = async (req: Request, res: Response): Promise<void> => {
   try {
     const { fileId } = req.params;
+    const token = req.query.token as string || req.headers.authorization?.split(' ')[1];
+
+    // Optionally verify token if provided (for image access via <img> tag)
+    if (token && token !== 'mock-token') {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+        const user = await User.findById(decoded.id).select('-password');
+        if (!user || !user.isActive) {
+          // If token is invalid, still allow access (public files)
+          // But log for security monitoring
+          console.log('⚠️ Invalid token for file access, allowing anyway (public access)');
+        }
+      } catch (error) {
+        // Token verification failed, but allow access anyway (public files)
+        console.log('⚠️ Token verification failed for file access, allowing anyway (public access)');
+      }
+    }
 
     if (!mongoose.Types.ObjectId.isValid(fileId)) {
       res.status(400).json({
@@ -224,11 +243,15 @@ export const getFile = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Set appropriate headers
+    // Set appropriate headers with CORS for image access
     res.set({
       'Content-Type': file.mimetype,
       'Content-Disposition': `inline; filename="${file.originalName}"`,
-      'Content-Length': file.size.toString()
+      'Content-Length': file.size.toString(),
+      'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+      'Access-Control-Allow-Origin': '*', // Allow CORS for images
+      'Access-Control-Allow-Methods': 'GET',
+      'Access-Control-Allow-Headers': 'Authorization'
     });
 
     res.send(file.data);
