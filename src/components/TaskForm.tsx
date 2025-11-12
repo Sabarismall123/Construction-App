@@ -3,7 +3,7 @@ import { X, Upload, File, Image, Trash2, Download } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Task } from '@/types';
-import { formatDate, validateDateRange } from '@/utils';
+import { formatDate } from '@/utils';
 import { TASK_STATUSES, PRIORITIES } from '@/constants';
 import { toast } from 'react-hot-toast';
 import { apiService } from '@/services/api';
@@ -50,8 +50,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onClose }) => {
       setFormData({
         title: task.title,
         assignedTo: task.assignedTo,
-        priority: task.priority,
-        status: task.status,
+        priority: task.priority as typeof formData.priority,
+        status: task.status as typeof formData.status,
         dueDate: task.dueDate,
         description: task.description,
         projectId: task.projectId,

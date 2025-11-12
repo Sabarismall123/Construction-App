@@ -3,11 +3,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { Building2, Eye, EyeOff, HardHat, Wrench, Hammer } from 'lucide-react';
 import ConstructionAnimations from '@/components/ConstructionAnimations';
+import { apiService } from '@/services/api';
 
 const LoginPage: React.FC = () => {
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('manager');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
@@ -16,14 +22,47 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (success) {
-        toast.success('Login successful!');
+      if (isRegisterMode) {
+        // Registration
+        if (password !== confirmPassword) {
+          toast.error('Passwords do not match');
+          setIsLoading(false);
+          return;
+        }
+        if (password.length < 6) {
+          toast.error('Password must be at least 6 characters');
+          setIsLoading(false);
+          return;
+        }
+        
+        const response = await apiService.register({
+          name,
+          email,
+          password,
+          role
+        });
+        
+        if (response.success) {
+          toast.success('Registration successful! Please login.');
+          setIsRegisterMode(false);
+          setName('');
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+        } else {
+          toast.error(response.error || 'Registration failed');
+        }
       } else {
-        toast.error('Invalid email or password');
+        // Login
+        const success = await login(email, password);
+        if (success) {
+          toast.success('Login successful!');
+        } else {
+          toast.error('Invalid email or password');
+        }
       }
-    } catch (error) {
-      toast.error('Login failed. Please try again.');
+    } catch (error: any) {
+      toast.error(error?.message || (isRegisterMode ? 'Registration failed. Please try again.' : 'Login failed. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +128,7 @@ const LoginPage: React.FC = () => {
               Construction Management
             </h2>
             <p className="mt-2 text-sm md:text-base text-gray-700 font-medium">
-              Sign in to your account
+              {isRegisterMode ? 'Create your account' : 'Sign in to your account'}
             </p>
           </div>
 
@@ -99,6 +138,25 @@ const LoginPage: React.FC = () => {
             boxShadow: '0 20px 25px -5px rgba(217, 119, 6, 0.2), 0 10px 10px -5px rgba(217, 119, 6, 0.15)'
           }}>
             <form className="space-y-6" onSubmit={handleSubmit}>
+              {isRegisterMode && (
+                <div className="w-full">
+                  <label htmlFor="name" className="label block text-left text-gray-700 font-medium">
+                    Full Name
+                  </label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    className="input w-full border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+              )}
+
               <div className="w-full">
                 <label htmlFor="email" className="label block text-left text-gray-700 font-medium">
                   Email address
@@ -116,6 +174,26 @@ const LoginPage: React.FC = () => {
                 />
               </div>
 
+              {isRegisterMode && (
+                <div className="w-full">
+                  <label htmlFor="role" className="label block text-left text-gray-700 font-medium">
+                    Role
+                  </label>
+                  <select
+                    id="role"
+                    name="role"
+                    className="input w-full border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                  >
+                    <option value="manager">Manager</option>
+                    <option value="site_supervisor">Site Supervisor</option>
+                    <option value="employee">Employee</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              )}
+
               <div className="w-full">
                 <label htmlFor="password" className="label block text-left text-gray-700 font-medium">
                   Password
@@ -125,11 +203,11 @@ const LoginPage: React.FC = () => {
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
+                    autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
                     required
                     className="input w-full border-gray-300 focus:border-orange-500 focus:ring-orange-500"
                     style={{ paddingRight: '2.5rem' }}
-                    placeholder="Enter your password"
+                    placeholder={isRegisterMode ? 'Enter password (min 6 characters)' : 'Enter your password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
@@ -147,6 +225,40 @@ const LoginPage: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {isRegisterMode && (
+                <div className="w-full">
+                  <label htmlFor="confirmPassword" className="label block text-left text-gray-700 font-medium">
+                    Confirm Password
+                  </label>
+                  <div className="relative w-full">
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      required
+                      className="input w-full border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                      style={{ paddingRight: '2.5rem' }}
+                      placeholder="Confirm your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="absolute top-1/2 -translate-y-1/2 right-2 flex items-center justify-center z-10 touch-manipulation w-8 h-8 hover:text-orange-600 transition-colors"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label="Toggle password visibility"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="w-full">
                 <button
@@ -169,10 +281,30 @@ const LoginPage: React.FC = () => {
                   {isLoading ? (
                     <div className="flex items-center justify-center">
                       <div className="loading-spinner h-5 w-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Signing in...
+                      {isRegisterMode ? 'Creating account...' : 'Signing in...'}
                     </div>
                   ) : (
-                    'Sign in'
+                    isRegisterMode ? 'Create Account' : 'Sign in'
+                  )}
+                </button>
+              </div>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegisterMode(!isRegisterMode);
+                    setName('');
+                    setEmail('');
+                    setPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className="text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
+                >
+                  {isRegisterMode ? (
+                    <>Already have an account? <span className="underline">Sign in</span></>
+                  ) : (
+                    <>Don't have an account? <span className="underline">Register</span></>
                   )}
                 </button>
               </div>
