@@ -354,7 +354,16 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       }
       
       const duplicateField = error.keyPattern ? Object.keys(error.keyPattern).join('+') : 'field';
-      const indexName = error.index || 'unknown';
+      // Try to get the actual index name from the error
+      let indexName = 'unknown';
+      if (error.index) {
+        indexName = error.index;
+      } else if (error.keyPattern) {
+        // Try to construct index name from key pattern
+        const keys = Object.keys(error.keyPattern);
+        const directions = keys.map(k => error.keyPattern[k]).join('_');
+        indexName = keys.map(k => `${k}_${error.keyPattern[k]}`).join('_');
+      }
       
       res.status(400).json({
         success: false,
