@@ -313,14 +313,28 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         console.error('⚠️ WARNING: Old unique index on employeeId+date still exists in database!');
         console.error('⚠️ This index needs to be dropped manually in MongoDB Atlas');
         console.error('⚠️ Index name likely: employeeId_1_date_1');
+        console.error('⚠️ STEPS TO FIX:');
+        console.error('   1. Go to MongoDB Atlas: https://cloud.mongodb.com');
+        console.error('   2. Navigate to: Cluster → Browse Collections → attendances → Indexes tab');
+        console.error('   3. Find and drop the unique index: employeeId_1_date_1');
+        console.error('   4. Also check for: employeeName_1_date_1_projectId_1 (if it\'s unique, drop it too)');
       }
       
       const duplicateField = error.keyPattern ? Object.keys(error.keyPattern).join('+') : 'field';
+      const indexName = error.index || 'unknown';
+      
       res.status(400).json({
         success: false,
         error: 'Duplicate attendance record',
         message: `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
-        details: `Duplicate key error on ${duplicateField}. ${error.keyPattern && error.keyPattern.employeeId ? 'NOTE: Old unique index detected - please drop employeeId_1_date_1 index in MongoDB.' : ''}`
+        details: `Duplicate key error on ${duplicateField}. MongoDB unique index "${indexName}" is blocking this. You MUST drop the unique index in MongoDB Atlas to fix this.`,
+        fixInstructions: {
+          step1: 'Go to MongoDB Atlas: https://cloud.mongodb.com',
+          step2: 'Navigate to: Cluster → Browse Collections → attendances → Indexes tab',
+          step3: `Find and drop the unique index: ${indexName}`,
+          step4: 'Also check for any other unique indexes (they should NOT be unique)',
+          note: 'After dropping the index, the backend will automatically create non-unique indexes on restart'
+        }
       });
       return;
     }
