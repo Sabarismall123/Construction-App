@@ -30,7 +30,7 @@ const MobileLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
   }, [sidebarOpen]);
 
   return (
-    <div className="mobile-layout min-h-screen h-screen flex flex-col bg-gray-100">
+    <div className="mobile-layout min-h-screen h-screen flex flex-col">
       {/* Header */}
       <MobileHeader user={user} onMenuClick={() => setSidebarOpen(true)} />
 
@@ -49,7 +49,7 @@ const MobileLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
       />
 
       {/* Page content */}
-      <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 pb-20 w-full max-w-full">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto pb-20 w-full max-w-full">
         <div className="mobile-content w-full max-w-full min-h-full">
           {children || <Outlet />}
         </div>

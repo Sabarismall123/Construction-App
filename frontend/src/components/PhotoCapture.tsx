@@ -69,7 +69,30 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
   };
 
   // Handle camera capture
-  const handleCameraCapture = () => {
+  const handleCameraCapture = async () => {
+    // Request location permission before opening camera
+    if (navigator.geolocation) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            () => {
+              console.log('Location permission granted');
+              resolve();
+            },
+            (error) => {
+              console.warn('Location permission denied or error:', error);
+              // Still allow camera to open even if location fails
+              resolve();
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          );
+        });
+      } catch (error) {
+        console.warn('Error requesting location:', error);
+      }
+    }
+    
+    // Open camera
     cameraInputRef.current?.click();
   };
 
@@ -137,6 +160,7 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
       {/* Capture buttons */}
       <div className="flex space-x-2 mb-4">
         <button
+          type="button"
           onClick={handleCameraCapture}
           disabled={isCapturing || photos.length >= maxPhotos}
           className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center"
@@ -146,6 +170,7 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
         </button>
         
         <button
+          type="button"
           onClick={handleGallerySelect}
           disabled={isCapturing || photos.length >= maxPhotos}
           className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center"
@@ -171,6 +196,17 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
         capture="environment"
         onChange={handleFileInputChange}
         className="hidden"
+        // Ensure camera opens on mobile devices
+        onClick={(e) => {
+          // Request location permission when camera button is clicked
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              () => console.log('Location permission granted'),
+              () => console.warn('Location permission denied'),
+              { enableHighAccuracy: true, timeout: 5000 }
+            );
+          }
+        }}
       />
 
       {/* Photo grid */}

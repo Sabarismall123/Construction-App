@@ -1,0 +1,36 @@
+[1mdiff --git a/frontend/src/components/Header.tsx b/frontend/src/components/Header.tsx[m
+[1mindex 46b640a9..6558753d 100644[m
+[1m--- a/frontend/src/components/Header.tsx[m
+[1m+++ b/frontend/src/components/Header.tsx[m
+[36m@@ -15,7 +15,15 @@[m [mconst Header: React.FC<HeaderProps> = ({ onMenuClick, user }) => {[m
+   const [showNotifications, setShowNotifications] = useState(false);[m
+   const [showUserMenu, setShowUserMenu] = useState(false);[m
+ [m
+[31m-  const unreadNotifications = notifications.filter(n => !n.read);[m
+[32m+[m[32m  // Filter notifications by current user - normalize IDs for comparison[m
+[32m+[m[32m  const userNotifications = user ? notifications.filter(n => {[m
+[32m+[m[32m    if (!n.userId) return true; // Show notifications without userId (global)[m
+[32m+[m[32m    // Normalize both IDs to strings for comparison[m
+[32m+[m[32m    const notificationUserId = n.userId?.toString() || n.userId;[m
+[32m+[m[32m    const currentUserId = user.id?.toString() || user.id;[m
+[32m+[m[32m    return notificationUserId === currentUserId;[m
+[32m+[m[32m  }) : notifications;[m
+[32m+[m[32m  const unreadNotifications = userNotifications.filter(n => !n.read);[m
+ [m
+   const handleLogout = () => {[m
+     logout();[m
+[36m@@ -65,12 +73,12 @@[m [mconst Header: React.FC<HeaderProps> = ({ onMenuClick, user }) => {[m
+                   </div>[m
+                 </div>[m
+                 <div className="max-h-64 overflow-y-auto">[m
+[31m-                  {notifications.length === 0 ? ([m
+[32m+[m[32m                  {userNotifications.length === 0 ? ([m
+                     <div className="p-4 text-center text-gray-500 dark:text-gray-400">[m
+                       No notifications[m
+                     </div>[m
+                   ) : ([m
+[31m-                    notifications.map((notification) => ([m
+[32m+[m[32m                    userNotifications.map((notification) => ([m
+                       <div[m
+                         key={notification.id}[m
+                         className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${[m

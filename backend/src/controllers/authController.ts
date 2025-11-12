@@ -10,8 +10,26 @@ interface AuthRequest extends Request {
 // Generate JWT Token
 const generateToken = (id: string): string => {
   const secret = process.env.JWT_SECRET || 'fallback-secret';
-  const expiresIn = process.env.JWT_EXPIRE || '7d';
-  return jwt.sign({ id }, secret, { expiresIn } as any);
+  // Ensure expiresIn is a valid string format (e.g., "7d", "24h", "30d") or number in seconds
+  let expiresIn: string | number = '7d'; // Default to 7 days
+  
+  if (process.env.JWT_EXPIRE) {
+    const envExpire = process.env.JWT_EXPIRE.trim();
+    // Check if it's a number (seconds)
+    if (/^\d+$/.test(envExpire)) {
+      expiresIn = parseInt(envExpire, 10);
+    } else if (/^\d+[dhms]$/i.test(envExpire)) {
+      // Valid format like "7d", "24h", "30m", "60s"
+      expiresIn = envExpire;
+    } else {
+      // Invalid format, use default
+      console.warn(`⚠️  Invalid JWT_EXPIRE format: "${envExpire}". Using default: "7d"`);
+      expiresIn = '7d';
+    }
+  }
+  
+  // Use type assertion to satisfy TypeScript's strict type checking
+  return jwt.sign({ id }, secret, { expiresIn } as jwt.SignOptions);
 };
 
 // @desc    Register user

@@ -47,5 +47,25 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     }
+  },
+  build: {
+    // Optimize for Vercel free tier - faster builds
+    minify: 'esbuild', // Faster than terser
+    sourcemap: false, // Disable sourcemaps in production to save build time
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['lucide-react', 'react-hot-toast'],
+          'chart-vendor': ['recharts']
+        }
+      }
+    },
+    // Reduce chunk size warnings
+    chunkSizeWarningLimit: 1000
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom']
   }
 })
