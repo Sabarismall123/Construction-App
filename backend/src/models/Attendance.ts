@@ -116,8 +116,10 @@ AttendanceSchema.index({ employeeId: 1, date: 1 }, {
 
 // For labour records, non-unique index for query performance
 // Multiple different labours (e.g., multiple carpenters) can have attendance on the same date
-AttendanceSchema.index({ employeeName: 1, date: 1, projectId: 1 }, { 
-  partialFilterExpression: { employeeId: null }
+// Include mobileNumber to differentiate between people with same name
+AttendanceSchema.index({ employeeName: 1, mobileNumber: 1, date: 1, projectId: 1 }, { 
+  partialFilterExpression: { employeeId: null },
+  name: 'labour_attendance_index'
 });
 
 // Regular indexes for query performance

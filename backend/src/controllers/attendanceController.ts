@@ -292,7 +292,31 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       success: true,
       data: populatedAttendance
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Handle MongoDB duplicate key errors
+    if (error.code === 11000 || error.code === 11001) {
+      console.error('❌ MongoDB duplicate key error:', error);
+      const duplicateField = error.keyPattern ? Object.keys(error.keyPattern)[0] : 'field';
+      res.status(400).json({
+        success: false,
+        error: 'Duplicate attendance record',
+        message: `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
+        details: `Duplicate key error on ${duplicateField}`
+      });
+      return;
+    }
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      console.error('❌ Validation error:', error);
+      res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.errors
+      });
+      return;
+    }
+    
     next(error);
   }
 };
