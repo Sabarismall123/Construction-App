@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check LocalStorage</title>
+</head>
+<body>
+    <h1>LocalStorage Check</h1>
+    <div id="output"></div>
+    
+    <script>
+        function checkLocalStorage() {
+            const output = document.getElementById('output');
+            
+            // Check for auth token
+            const authToken = localStorage.getItem('authToken');
+            output.innerHTML += '<h2>Auth Token:</h2>';
+            output.innerHTML += authToken ? `<p>✅ Found: ${authToken.substring(0, 50)}...</p>` : '<p>❌ No auth token found</p>';
+            
+            // Check for app data
+            const appData = localStorage.getItem('construction-management-data');
+            output.innerHTML += '<h2>App Data:</h2>';
+            if (appData) {
+                try {
+                    const parsed = JSON.parse(appData);
+                    output.innerHTML += '<p>✅ App data found</p>';
+                    output.innerHTML += `<p>Projects: ${parsed.projects ? parsed.projects.length : 0}</p>`;
+                    
+                    if (parsed.projects && parsed.projects.length > 0) {
+                        output.innerHTML += '<h3>Projects in localStorage:</h3>';
+                        parsed.projects.forEach((project, index) => {
+                            output.innerHTML += `<p>${index + 1}. ${project.name} - ${project.client}</p>`;
+                        });
+                    }
+                } catch (e) {
+                    output.innerHTML += '<p>❌ Error parsing app data</p>';
+                }
+            } else {
+                output.innerHTML += '<p>❌ No app data found</p>';
+            }
+        }
+        
+        checkLocalStorage();
+    </script>
+</body>
+</html>

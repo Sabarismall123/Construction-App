@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, File, Image, Trash2, Download } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Issue } from '@/types';
 import { formatDate, validateDateRange } from '@/utils';
 import { ISSUE_STATUSES, PRIORITIES } from '@/constants';
@@ -24,7 +25,8 @@ interface IssueFormProps {
 }
 
 const IssueForm: React.FC<IssueFormProps> = ({ issue, onClose }) => {
-  const { addIssue, updateIssue, projects } = useData();
+  const { addIssue, updateIssue, projects, users, addNotification } = useData();
+  const { hasRole, user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     projectId: '',
@@ -42,12 +44,24 @@ const IssueForm: React.FC<IssueFormProps> = ({ issue, onClose }) => {
 
   useEffect(() => {
     if (issue) {
+      // Handle assignedTo - it might be an ObjectId, string, or object
+      let assignedToValue = '';
+      if (issue.assignedTo) {
+        if (typeof issue.assignedTo === 'string') {
+          assignedToValue = issue.assignedTo;
+        } else if (typeof issue.assignedTo === 'object' && (issue.assignedTo as any)._id) {
+          assignedToValue = (issue.assignedTo as any)._id.toString();
+        } else {
+          assignedToValue = issue.assignedTo.toString();
+        }
+      }
+      
       setFormData({
         title: issue.title,
         projectId: issue.projectId,
         priority: issue.priority,
         status: issue.status,
-        assignedTo: issue.assignedTo,
+        assignedTo: assignedToValue,
         dueDate: issue.dueDate,
         description: issue.description,
         attachments: issue.attachments
@@ -74,7 +88,8 @@ const IssueForm: React.FC<IssueFormProps> = ({ issue, onClose }) => {
       newErrors.projectId = 'Project is required';
     }
 
-    if (!formData.assignedTo.trim()) {
+    // Only require assignedTo for managers/admins, not for employees
+    if (hasRole(['admin', 'manager', 'site_supervisor']) && !formData.assignedTo.trim()) {
       newErrors.assignedTo = 'Assigned to is required';
     }
 
@@ -188,23 +203,51 @@ const IssueForm: React.FC<IssueFormProps> = ({ issue, onClose }) => {
     setIsSubmitting(true);
 
     try {
-      const issueData = {
+      const issueData: any = {
         title: formData.title.trim(),
         projectId: formData.projectId,
         priority: formData.priority,
         status: formData.status,
-        assignedTo: formData.assignedTo.trim(),
         dueDate: formData.dueDate,
         description: formData.description.trim(),
-        attachments: attachments.map(att => att.id)
+        attachments: attachments.map(att => att.id),
+        // For employees, include reportedBy to track who reported the issue
+        reportedBy: user?.id || ''
       };
+      
+      // Only include assignedTo if it's provided (for managers) or if editing
+      if (formData.assignedTo.trim() || (issue && issue.assignedTo)) {
+        const assignedToValue = formData.assignedTo.trim() || (issue?.assignedTo ? 
+          (typeof issue.assignedTo === 'string' ? issue.assignedTo : 
+           typeof issue.assignedTo === 'object' && (issue.assignedTo as any)._id ? 
+           (issue.assignedTo as any)._id.toString() : 
+           issue.assignedTo.toString()) : '');
+        issueData.assignedTo = assignedToValue;
+      }
+      // For employees, don't send assignedTo at all (or send null)
 
       if (issue) {
-        updateIssue(issue.id, issueData);
+        await updateIssue(issue.id, issueData);
         toast.success('Issue updated successfully');
+        // Notification is sent in updateIssue function if assignedTo changed
       } else {
-        addIssue(issueData);
+        await addIssue(issueData);
         toast.success('Issue created successfully');
+        
+        // Notify all managers when employee creates an issue (additional notification in form)
+        if (user && (user.role === 'employee' || !hasRole(['admin', 'manager', 'site_supervisor']))) {
+          const managers = users.filter(u => u.role === 'manager' || u.role === 'admin');
+          const projectName = projects.find(p => p.id === formData.projectId)?.name || 'a project';
+          managers.forEach(manager => {
+            addNotification({
+              title: 'New Issue Reported',
+              message: `${user.name} reported a new issue: "${formData.title}" in project "${projectName}"`,
+              type: 'warning',
+              read: false,
+              userId: manager.id
+            });
+          });
+        }
       }
 
       onClose();
@@ -281,21 +324,29 @@ const IssueForm: React.FC<IssueFormProps> = ({ issue, onClose }) => {
                   {errors.projectId && <p className="form-error">{errors.projectId}</p>}
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="assignedTo" className="label">
-                    Assigned To *
-                  </label>
-                  <input
-                    type="text"
-                    id="assignedTo"
-                    name="assignedTo"
-                    className={errors.assignedTo ? 'input-error' : 'input'}
-                    value={formData.assignedTo}
-                    onChange={handleChange}
-                    placeholder="Enter assignee name"
-                  />
-                  {errors.assignedTo && <p className="form-error">{errors.assignedTo}</p>}
-                </div>
+                {/* Only show Assigned To field for managers/admins, not for employees */}
+                {hasRole(['admin', 'manager', 'site_supervisor']) && (
+                  <div className="form-group">
+                    <label htmlFor="assignedTo" className="label">
+                      Assigned To *
+                    </label>
+                    <select
+                      id="assignedTo"
+                      name="assignedTo"
+                      className={errors.assignedTo ? 'input-error' : 'input'}
+                      value={formData.assignedTo}
+                      onChange={handleChange}
+                    >
+                      <option value="">Select a user</option>
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} ({user.email})
+                        </option>
+                      ))}
+                    </select>
+                    {errors.assignedTo && <p className="form-error">{errors.assignedTo}</p>}
+                  </div>
+                )}
               </div>
 
               <div className="form-row">

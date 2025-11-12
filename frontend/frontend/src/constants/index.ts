@@ -53,11 +53,10 @@ export const RESOURCE_STATUSES = [
 
 export const PETTY_CASH_CATEGORIES = [
   { value: 'fuel', label: 'Fuel', icon: '⛽' },
-  { value: 'food', label: 'Food', icon: '🍽️' },
+  { value: 'meals', label: 'Meals', icon: '🍽️' },
   { value: 'transport', label: 'Transport', icon: '🚗' },
-  { value: 'tools', label: 'Tools', icon: '🔧' },
-  { value: 'miscellaneous', label: 'Miscellaneous', icon: '📦' },
-  { value: 'emergency', label: 'Emergency', icon: '🚨' }
+  { value: 'supplies', label: 'Supplies', icon: '🔧' },
+  { value: 'other', label: 'Other', icon: '📦' }
 ];
 
 export const ATTENDANCE_STATUSES = [

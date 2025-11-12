@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Upload, Download, Clock, User, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Upload, Download, Clock, User, X, Eye } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate, searchItems, filterItems } from '@/utils';
 import { ATTENDANCE_STATUSES } from '@/constants';
 import AttendanceForm from '@/components/AttendanceForm';
+import QuickAttendanceForm from '@/components/QuickAttendanceForm';
+import AttendanceDetail from '@/components/AttendanceDetail';
 import MobileDropdown from '@/components/MobileDropdown';
 import * as XLSX from 'xlsx';
 
@@ -16,7 +18,10 @@ const Attendance: React.FC = () => {
   const [projectFilter, setProjectFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [showQuickForm, setShowQuickForm] = useState(false);
   const [editingAttendance, setEditingAttendance] = useState<any>(null);
+  const [selectedAttendance, setSelectedAttendance] = useState<any>(null);
+  const [showDetail, setShowDetail] = useState(false);
 
   const filteredAttendance = filterItems(
     searchItems(attendance, searchTerm, ['employeeName']),
@@ -168,6 +173,13 @@ const Attendance: React.FC = () => {
               Export
             </button>
             <button
+              onClick={() => setShowQuickForm(true)}
+              className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2 bg-green-600 hover:bg-green-700"
+            >
+              <Clock className="h-3.5 w-3.5 mr-1.5 lg:h-4 lg:w-4 lg:mr-2" />
+              Quick Mark
+            </button>
+            <button
               onClick={() => setShowForm(true)}
               className="w-full lg:w-auto btn-primary flex items-center justify-center text-xs px-3 py-1.5 lg:text-sm lg:px-3 lg:py-2"
             >
@@ -260,10 +272,18 @@ const Attendance: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-20">
           {filteredAttendance.map((record) => (
-            <div key={record.id} className="card hover:shadow-md transition-shadow">
-              <div className="card-body p-4">
+            <div 
+              key={record.id} 
+              className="card hover:shadow-md transition-shadow cursor-pointer group"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255, 250, 240, 0.98) 0%, rgba(255, 248, 235, 0.95) 100%)',
+                border: '2px solid rgba(217, 119, 6, 0.15)',
+                boxShadow: '0 4px 6px -1px rgba(217, 119, 6, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+              }}
+            >
+              <div className="card-body p-4 md:p-5">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center flex-1 min-w-0">
                         <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
@@ -279,7 +299,19 @@ const Attendance: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex space-x-1 flex-shrink-0">
-                        {hasRole(['admin', 'manager', 'site_supervisor']) && (
+                        {/* View button - visible to all users */}
+                        <button
+                          onClick={() => {
+                            setSelectedAttendance(record);
+                            setShowDetail(true);
+                          }}
+                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg"
+                          title="View attendance details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        {/* Only managers can edit attendance */}
+                        {hasRole(['admin', 'manager']) && (
                           <>
                             <button
                               onClick={() => {
@@ -287,12 +319,14 @@ const Attendance: React.FC = () => {
                                 setShowForm(true);
                               }}
                               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                              title="Edit attendance (Manager only)"
                             >
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => deleteAttendance(record.id)}
                               className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                              title="Delete attendance (Manager only)"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -305,7 +339,7 @@ const Attendance: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-gray-700 mr-2">Project:</span>
                         <span className="text-xs text-gray-900 truncate flex-1 text-right">
-                          {getProjectName(record.projectId)}
+                          {record.projectName || getProjectName(record.projectId)}
                         </span>
                       </div>
                       
@@ -371,6 +405,15 @@ const Attendance: React.FC = () => {
             </div>
           )}
 
+      {/* Quick Mark Attendance Modal */}
+      {showQuickForm && (
+        <QuickAttendanceForm
+          onClose={() => {
+            setShowQuickForm(false);
+          }}
+        />
+      )}
+
       {/* Create Labour Form Modal */}
       {showForm && (
         <AttendanceForm
@@ -378,6 +421,17 @@ const Attendance: React.FC = () => {
           onClose={() => {
             setShowForm(false);
             setEditingAttendance(null);
+          }}
+        />
+      )}
+
+      {/* Attendance Detail Modal */}
+      {showDetail && selectedAttendance && (
+        <AttendanceDetail
+          attendance={selectedAttendance}
+          onClose={() => {
+            setShowDetail(false);
+            setSelectedAttendance(null);
           }}
         />
       )}

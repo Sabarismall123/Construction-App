@@ -1,9 +1,12 @@
 // Detect API URL - use production backend URL for deployed frontend
 const getApiBaseUrl = () => {
-  // If VITE_API_URL is set, use it
-  if (import.meta.env.VITE_API_URL) {
-    console.log('📡 Using API URL from env:', import.meta.env.VITE_API_URL);
-    return import.meta.env.VITE_API_URL;
+  // If VITE_API_URL is set, use it (ensure it ends with /api)
+  const apiUrl = (import.meta as any).env?.VITE_API_URL;
+  if (apiUrl) {
+    // Ensure the URL ends with /api
+    const baseUrl = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+    console.log('📡 Using API URL from env:', baseUrl);
+    return baseUrl;
   }
   
   // If we're on localhost, use local backend
@@ -13,8 +16,8 @@ const getApiBaseUrl = () => {
   }
   
   // For deployed frontend (Vercel), use production backend (Render)
-  // Replace with your actual Render backend URL
-  const productionApiUrl = 'https://your-backend-url.onrender.com/api';
+  // Default to Render backend URL
+  const productionApiUrl = 'https://construction-app-pbj3.onrender.com/api';
   console.log('📡 Using production API URL:', productionApiUrl);
   return productionApiUrl;
 };
@@ -24,8 +27,7 @@ const API_BASE_URL = getApiBaseUrl();
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null; // Use mock token for demo
+    const token = localStorage.getItem('construction_token'); // Use real token from login
     
     console.log('🌐 API Request:', {
       method: options.method || 'GET',
@@ -77,13 +79,16 @@ class ApiService {
         });
         
         // Create error with proper message
-        const errorMessage = errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+        const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
         const error: any = new Error(errorMessage);
         error.response = {
           status: response.status,
           statusText: response.statusText,
           data: errorData
         };
+        // Preserve the full error data for duplicate checks
+        error.errorData = errorData;
+        error.success = errorData.success;
         throw error;
       }
       
@@ -336,6 +341,35 @@ class ApiService {
     });
   }
 
+  // Site Transfer endpoints
+  async getSiteTransfers() {
+    return this.request('/site-transfers');
+  }
+
+  async getSiteTransfer(id: string) {
+    return this.request(`/site-transfers/${id}`);
+  }
+
+  async createSiteTransfer(transfer: any) {
+    return this.request('/site-transfers', {
+      method: 'POST',
+      body: JSON.stringify(transfer),
+    });
+  }
+
+  async updateSiteTransfer(id: string, transfer: any) {
+    return this.request(`/site-transfers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(transfer),
+    });
+  }
+
+  async deleteSiteTransfer(id: string) {
+    return this.request(`/site-transfers/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Material Issue endpoints
   async getMaterialIssues() {
     return this.request('/material-issues');
@@ -485,6 +519,39 @@ class ApiService {
     return this.request(`/attendance/project/${projectId}`);
   }
 
+  // Labour endpoints
+  async getLabours() {
+    return this.request('/labours');
+  }
+
+  async getLabour(id: string) {
+    return this.request(`/labours/${id}`);
+  }
+
+  async createLabour(labour: any) {
+    return this.request('/labours', {
+      method: 'POST',
+      body: JSON.stringify(labour),
+    });
+  }
+
+  async updateLabour(id: string, labour: any) {
+    return this.request(`/labours/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(labour),
+    });
+  }
+
+  async deleteLabour(id: string) {
+    return this.request(`/labours/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getLaboursByProject(projectId: string) {
+    return this.request(`/labours/project/${projectId}`);
+  }
+
   // File upload methods
   async uploadFile(file: File, taskId?: string, projectId?: string, issueId?: string): Promise<any> {
     const formData = new FormData();
@@ -493,8 +560,7 @@ class ApiService {
     if (projectId) formData.append('projectId', projectId);
     if (issueId) formData.append('issueId', issueId);
 
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null;
+    const token = localStorage.getItem('construction_token');
     const response = await fetch(`${API_BASE_URL}/files/upload`, {
       method: 'POST',
       body: formData,
@@ -517,8 +583,7 @@ class ApiService {
     if (projectId) formData.append('projectId', projectId);
     if (issueId) formData.append('issueId', issueId);
 
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null;
+    const token = localStorage.getItem('construction_token');
     const response = await fetch(`${API_BASE_URL}/files/upload-multiple`, {
       method: 'POST',
       body: formData,
@@ -535,8 +600,7 @@ class ApiService {
   }
 
   async getFile(fileId: string): Promise<Blob> {
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null;
+    const token = localStorage.getItem('construction_token');
     const response = await fetch(`${API_BASE_URL}/files/${fileId}`, {
       headers: {
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -566,8 +630,7 @@ class ApiService {
 
   // Helper method to get file URL
   getFileUrl(fileId: string): string {
-    const user = localStorage.getItem('construction_user');
-    const token = user ? 'mock-token' : null;
+    const token = localStorage.getItem('construction_token');
     return `${API_BASE_URL}/files/${fileId}${token ? `?token=${token}` : ''}`;
   }
 }

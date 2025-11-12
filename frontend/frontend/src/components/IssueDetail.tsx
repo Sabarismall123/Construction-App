@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Calendar, User, MessageSquare, Paperclip, Send, CheckCircle, Download, Image, File, Eye } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Issue } from '@/types';
 import { formatDate } from '@/utils';
 import { ISSUE_STATUSES, PRIORITIES } from '@/constants';
@@ -13,11 +14,28 @@ interface IssueDetailProps {
 }
 
 const IssueDetail: React.FC<IssueDetailProps> = ({ issue, onClose }) => {
-  const { addIssueComment, updateIssue, projects } = useData();
+  const { addIssueComment, updateIssue, projects, users, addNotification } = useData();
+  const { user: currentUser, hasRole } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [resolution, setResolution] = useState(issue.resolution || '');
   const [storedFiles, setStoredFiles] = useState<any[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Check if current user is the assigned user
+  const isAssignedUser = currentUser && issue.assignedTo && (
+    currentUser.id === issue.assignedTo || 
+    currentUser.id === (issue.assignedTo as any)?._id?.toString() ||
+    currentUser.id === issue.assignedTo.toString()
+  );
+  
+  // Check if current user is manager/admin (can resolve issues)
+  const canResolveIssue = currentUser && (
+    isAssignedUser || 
+    hasRole(['admin', 'manager', 'site_supervisor'])
+  );
 
   const project = projects.find(p => p.id === issue.projectId);
 
@@ -106,11 +124,91 @@ const IssueDetail: React.FC<IssueDetailProps> = ({ issue, onClose }) => {
     }
   };
 
-  const handleResolve = async () => {
+  // Track changes to resolution
+  useEffect(() => {
+    const resolutionChanged = resolution !== (issue.resolution || '');
+    setHasChanges(resolutionChanged);
+  }, [resolution, issue.resolution]);
+
+  // Handle file upload
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      
+      try {
+        // Upload files
+        for (const file of files) {
+          await apiService.uploadFile(file, undefined, issue.projectId, issue.id);
+        }
+        
+        toast.success(`${files.length} file(s) uploaded successfully`);
+        
+        // Mark as having changes so Save button becomes enabled
+        setHasChanges(true);
+        
+        // Reload attachments by fetching issue again
+        try {
+          const issueResponse = await apiService.getIssue(issue.id);
+          const updatedIssue = (issueResponse as any).data || issueResponse;
+          if (updatedIssue.attachments && updatedIssue.attachments.length > 0) {
+            // Check if attachments are already populated objects or just IDs
+            const firstAttachment = updatedIssue.attachments[0];
+            
+            if (typeof firstAttachment === 'object' && firstAttachment._id) {
+              // Attachments are already populated objects from backend
+              const files = updatedIssue.attachments.map((attachment: any) => ({
+                id: attachment._id,
+                originalName: attachment.originalName,
+                mimetype: attachment.mimetype,
+                size: attachment.size
+              }));
+              setStoredFiles(files);
+            } else {
+              // Attachments are just IDs, need to load them individually
+              const loadFilePromises = updatedIssue.attachments.map(async (fileId: string) => {
+                try {
+                  const response = await apiService.getFileInfo(fileId);
+                  return response.success ? response.data : null;
+                } catch (error) {
+                  console.error(`❌ Failed to load file ${fileId}:`, error);
+                  return null;
+                }
+              });
+              
+              Promise.all(loadFilePromises).then(files => {
+                const validFiles = files.filter(file => file !== null);
+                setStoredFiles(validFiles);
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error reloading attachments:', error);
+        }
+      } catch (error) {
+        console.error('File upload error:', error);
+        toast.error('Failed to upload files');
+      } finally {
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    }
+  };
+
+  // Handle add attachment button click
+  const handleAddAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Handle save - save resolution and notify reporter
+  const handleSave = async () => {
     if (!resolution.trim()) {
       toast.error('Please provide a resolution');
       return;
     }
+
+    setIsSaving(true);
 
     try {
       await updateIssue(issue.id, {
@@ -118,10 +216,72 @@ const IssueDetail: React.FC<IssueDetailProps> = ({ issue, onClose }) => {
         resolution: resolution.trim(),
         resolvedAt: formatDate(new Date())
       });
-      toast.success('Issue resolved successfully');
+      
+      // Fetch latest issue data to get attachment count
+      let updatedIssueData = issue;
+      try {
+        const issueResponse = await apiService.getIssue(issue.id);
+        updatedIssueData = (issueResponse as any).data || issueResponse;
+      } catch (error) {
+        console.warn('Could not fetch updated issue data, using current issue data');
+      }
+      
+      // Check if issue has attachments
+      const issueAttachments = updatedIssueData.attachments || issue.attachments || [];
+      const hasAttachments = issueAttachments.length > 0;
+      
+      // Notify the person who created/reported the issue
+      const issueWithReporter = updatedIssueData as any;
+      const reportedById = issueWithReporter.reportedBy?._id || issueWithReporter.reportedBy || issue.reportedBy;
+      const reportedByName = issueWithReporter.reportedByName || issueWithReporter.reportedBy?.name || 'the reporter';
+      
+      if (reportedById) {
+        const reportedByIdStr = reportedById.toString();
+        const reporter = users.find(u => u.id === reportedByIdStr || u.id === reportedById);
+        
+        const attachmentText = hasAttachments ? ` (${issueAttachments.length} photo${issueAttachments.length > 1 ? 's' : ''} attached)` : '';
+        const message = `Issue "${issue.title}" has been resolved${attachmentText}. Resolution: ${resolution.trim().substring(0, 100)}${resolution.trim().length > 100 ? '...' : ''}`;
+        
+        if (reporter) {
+          addNotification({
+            title: 'Issue Resolved',
+            message: message,
+            type: 'success',
+            read: false,
+            userId: reporter.id
+          });
+          console.log(`✅ Notification sent to reporter ${reporter.name}: Issue resolved`);
+        } else {
+          // If reporter not found in users list, use reportedBy ID directly
+          addNotification({
+            title: 'Issue Resolved',
+            message: message,
+            type: 'success',
+            read: false,
+            userId: reportedByIdStr
+          });
+          console.log(`✅ Notification sent to reporter (ID: ${reportedByIdStr}): Issue resolved`);
+        }
+      }
+      
+      setHasChanges(false);
+      toast.success('Issue resolved successfully! Reporter has been notified.');
+      
+      // Auto-close the dialog after a short delay
+      setTimeout(() => {
+        onClose();
+      }, 500);
     } catch (error) {
+      console.error('Save error:', error);
       toast.error('Failed to resolve issue');
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleResolve = async () => {
+    // Use handleSave instead
+    await handleSave();
   };
 
   return (
@@ -172,8 +332,8 @@ const IssueDetail: React.FC<IssueDetailProps> = ({ issue, onClose }) => {
                 </div>
               )}
 
-              {/* Resolution Form */}
-              {issue.status !== 'resolved' && (
+              {/* Resolution Form - Show for assigned users and managers */}
+              {issue.status !== 'resolved' && canResolveIssue && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Resolution</h3>
                   <div className="space-y-3">
@@ -184,13 +344,24 @@ const IssueDetail: React.FC<IssueDetailProps> = ({ issue, onClose }) => {
                       value={resolution}
                       onChange={(e) => setResolution(e.target.value)}
                     />
-                    <button
-                      onClick={handleResolve}
-                      className="btn-primary"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Resolve Issue
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAddAttachmentClick}
+                        className="btn-secondary flex items-center gap-2"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                        Add Attachment
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        className="hidden"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                        onChange={handleFileUpload}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -315,22 +486,19 @@ const IssueDetail: React.FC<IssueDetailProps> = ({ issue, onClose }) => {
                   <div className="flex space-x-2">
                     <input
                       type="text"
-                      placeholder="Add a comment..."
+                      placeholder="Add a comment... (Press Enter to send)"
                       className="input flex-1"
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (newComment.trim() && !isSubmittingComment) {
+                            handleAddComment(e as any);
+                          }
+                        }
+                      }}
                     />
-                    <button
-                      type="submit"
-                      disabled={!newComment.trim() || isSubmittingComment}
-                      className="btn-primary"
-                    >
-                      {isSubmittingComment ? (
-                        <div className="loading-spinner h-4 w-4"></div>
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </button>
                   </div>
                 </form>
 
@@ -343,7 +511,7 @@ const IssueDetail: React.FC<IssueDetailProps> = ({ issue, onClose }) => {
                       <div key={comment.id} className="flex space-x-3">
                         <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
                           <span className="text-xs font-medium text-gray-600">
-                            {comment.authorName.charAt(0)}
+                            {comment.authorName?.charAt(0)?.toUpperCase() || '?'}
                           </span>
                         </div>
                         <div className="flex-1">
@@ -393,12 +561,23 @@ const IssueDetail: React.FC<IssueDetailProps> = ({ issue, onClose }) => {
                   <div>
                     <label className="text-sm font-medium text-gray-500">Assigned To</label>
                     <div className="mt-1 flex items-center">
-                      <div className="h-6 w-6 bg-gray-300 rounded-full flex items-center justify-center mr-2">
-                        <span className="text-xs font-medium text-gray-600">
-                          {issue.assignedTo.charAt(0)}
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-900">{issue.assignedTo}</span>
+                      {issue.assignedTo ? (
+                        <>
+                          <div className="h-6 w-6 bg-gray-300 rounded-full flex items-center justify-center mr-2">
+                            <span className="text-xs font-medium text-gray-600">
+                              {typeof issue.assignedTo === 'string' ? issue.assignedTo.charAt(0).toUpperCase() : 'U'}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-900">{issue.assignedTo}</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="h-6 w-6 bg-gray-200 rounded-full flex items-center justify-center mr-2">
+                            <span className="text-xs font-medium text-gray-500">-</span>
+                          </div>
+                          <span className="text-sm text-gray-500 italic">Unassigned</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -435,12 +614,38 @@ const IssueDetail: React.FC<IssueDetailProps> = ({ issue, onClose }) => {
         </div>
 
         <div className="modal-footer">
-          <button
-            onClick={onClose}
-            className="btn-secondary"
-          >
-            Close
-          </button>
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm text-gray-500">
+              {hasChanges && canResolveIssue && <span className="text-orange-600">You have unsaved changes</span>}
+            </div>
+            <div className="flex items-center gap-3">
+              {issue.status !== 'resolved' && canResolveIssue && (
+                <button
+                  onClick={handleSave}
+                  disabled={!hasChanges || isSaving || !resolution.trim()}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="loading-spinner h-4 w-4"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Save & Resolve</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="btn-secondary"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

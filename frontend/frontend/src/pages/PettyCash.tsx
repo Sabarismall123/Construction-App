@@ -77,7 +77,7 @@ const PettyCash: React.FC = () => {
       <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Petty Cash</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">
             Track and manage small expenses and reimbursements
           </p>
         </div>
@@ -135,18 +135,22 @@ const PettyCash: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="card-body p-4">
+      <div className="card" style={{
+        background: 'linear-gradient(135deg, rgba(255, 250, 240, 0.98) 0%, rgba(255, 248, 235, 0.95) 100%)',
+        border: '2px solid rgba(217, 119, 6, 0.15)',
+        boxShadow: '0 4px 6px -1px rgba(217, 119, 6, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      }}>
+        <div className="card-body p-4 md:p-5">
           <div className="flex flex-col space-y-4">
             {/* Search */}
             <div className="relative">
               <div className="search-icon">
-                <Search className="h-5 w-5" />
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="text"
                 placeholder="Search expenses..."
-                className="search-input"
+                className="search-input bg-white/90"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -212,23 +216,18 @@ const PettyCash: React.FC = () => {
       </div>
 
       {/* Expenses List */}
-      {filteredExpenses.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">
-            <Receipt className="h-12 w-12" />
-          </div>
-          <h3 className="empty-state-title">No expenses found</h3>
-          <p className="empty-state-description">
-            {searchTerm || categoryFilter || projectFilter || dateFrom || dateTo
-              ? 'Try adjusting your search or filter criteria.'
-              : 'Get started by adding your first expense.'}
-          </p>
-        </div>
-      ) : (
-            <div className="space-y-4">
-              {filteredExpenses.map((expense) => (
-                <div key={expense.id} className="card hover:shadow-md transition-shadow">
-                  <div className="card-body p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-20">
+        {filteredExpenses.map((expense) => (
+          <div 
+            key={expense.id} 
+            className="card hover:shadow-md transition-shadow cursor-pointer group"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 250, 240, 0.98) 0%, rgba(255, 248, 235, 0.95) 100%)',
+              border: '2px solid rgba(217, 119, 6, 0.15)',
+              boxShadow: '0 4px 6px -1px rgba(217, 119, 6, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            }}
+          >
+            <div className="card-body p-4 md:p-5">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-medium text-gray-900 truncate">
@@ -238,7 +237,7 @@ const PettyCash: React.FC = () => {
                           Paid to: {expense.paidTo}
                         </p>
                       </div>
-                      <div className="flex space-x-1 flex-shrink-0">
+                      <div className="flex space-x-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                         {hasRole(['admin', 'manager', 'site_supervisor']) && (
                           <>
                             <button
@@ -246,13 +245,13 @@ const PettyCash: React.FC = () => {
                                 setEditingExpense(expense);
                                 setShowForm(true);
                               }}
-                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                              className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                             >
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => deletePettyCash(expense.id)}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -265,7 +264,7 @@ const PettyCash: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-gray-700 mr-2">Date:</span>
                         <span className="text-xs text-gray-900">
-                          {formatDate(expense.date)}
+                          {expense.date ? (typeof expense.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(expense.date) ? formatDate(expense.date, 'MMM dd, yyyy') : formatDate(expense.date)) : 'Invalid Date'}
                         </span>
                       </div>
 
@@ -303,8 +302,22 @@ const PettyCash: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
-          )}
+      </div>
+
+      {/* Empty State */}
+      {filteredExpenses.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Receipt className="h-12 w-12" />
+          </div>
+          <h3 className="empty-state-title">No expenses found</h3>
+          <p className="empty-state-description">
+            {searchTerm || categoryFilter || projectFilter || dateFrom || dateTo
+              ? 'Try adjusting your search or filter criteria.'
+              : 'Get started by adding your first expense.'}
+          </p>
+        </div>
+      )}
 
       {/* Petty Cash Form Modal */}
       {showForm && (

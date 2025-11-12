@@ -17,7 +17,15 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
-  const unreadNotifications = notifications.filter(n => !n.read);
+  // Filter notifications by current user - normalize IDs for comparison
+  const userNotifications = user ? notifications.filter(n => {
+    if (!n.userId) return true; // Show notifications without userId (global)
+    // Normalize both IDs to strings for comparison
+    const notificationUserId = n.userId?.toString() || n.userId;
+    const currentUserId = user.id?.toString() || user.id;
+    return notificationUserId === currentUserId;
+  }) : notifications;
+  const unreadNotifications = userNotifications.filter(n => !n.read);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -110,12 +118,12 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ user, onMenuClick }) => {
                   </div>
                 </div>
                 <div className="overflow-y-auto flex-1">
-                  {notifications.length === 0 ? (
+                  {userNotifications.length === 0 ? (
                     <div className="p-3 text-center text-gray-500 text-sm">
                       No notifications
                     </div>
                   ) : (
-                    notifications.map((notification) => (
+                    userNotifications.map((notification) => (
                       <div
                         key={notification.id}
                         className={`p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
