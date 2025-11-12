@@ -138,7 +138,11 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       // Labour record - check by employeeName + mobileNumber + date + projectId
       // This allows multiple plumbers with same name but different mobile numbers
       duplicateQuery.employeeId = null;
-      duplicateQuery.employeeName = req.body.employeeName?.trim();
+      // Use case-insensitive matching for employeeName
+      const employeeName = req.body.employeeName?.trim();
+      if (employeeName) {
+        duplicateQuery.employeeName = { $regex: new RegExp(`^${employeeName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') };
+      }
       duplicateQuery.projectId = new mongoose.Types.ObjectId(req.body.projectId);
       
       // Include mobileNumber in duplicate check if provided
@@ -180,7 +184,30 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         existingMobile: existingAttendance.mobileNumber,
         existingDate: existingAttendance.date,
         existingProject: existingAttendance.projectId,
-        existingEmployeeId: existingAttendance.employeeId
+        existingEmployeeId: existingAttendance.employeeId,
+        requestedName: req.body.employeeName,
+        requestedMobile: req.body.mobileNumber,
+        requestedDate: normalizedDate,
+        requestedProject: req.body.projectId
+      });
+      
+      // Check if names actually match (case-insensitive)
+      const existingName = existingAttendance.employeeName?.toLowerCase().trim();
+      const requestedName = req.body.employeeName?.toLowerCase().trim();
+      const namesMatch = existingName === requestedName;
+      
+      // Check if mobile numbers match
+      const existingMobile = existingAttendance.mobileNumber?.trim();
+      const requestedMobile = req.body.mobileNumber?.trim();
+      const mobilesMatch = existingMobile === requestedMobile;
+      
+      console.log('🔍 Duplicate match details:', {
+        namesMatch,
+        existingName,
+        requestedName,
+        mobilesMatch,
+        existingMobile,
+        requestedMobile
       });
       
       res.status(400).json({
@@ -189,7 +216,13 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         message: req.body.employeeId 
           ? 'Attendance for this employee on this date already exists'
           : `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
-        existingRecordId: existingId
+        existingRecordId: existingId,
+        existingRecord: {
+          employeeName: existingAttendance.employeeName,
+          mobileNumber: existingAttendance.mobileNumber,
+          date: existingAttendance.date,
+          projectId: existingAttendance.projectId
+        }
       });
       return;
     }
