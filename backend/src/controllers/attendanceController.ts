@@ -122,7 +122,7 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
     normalizedDate.setHours(0, 0, 0, 0);
 
     // Check for duplicate attendance record
-    // For labour records (no employeeId), check by employeeName + date + projectId
+    // For labour records (no employeeId), check by employeeName + mobileNumber + date + projectId
     // For employee records (with employeeId), check by employeeId + date
     const duplicateQuery: any = {
       date: {
@@ -135,10 +135,21 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       // Employee record - check by employeeId + date
       duplicateQuery.employeeId = new mongoose.Types.ObjectId(req.body.employeeId);
     } else {
-      // Labour record - check by employeeName + date + projectId
+      // Labour record - check by employeeName + mobileNumber + date + projectId
+      // This allows multiple plumbers with same name but different mobile numbers
       duplicateQuery.employeeId = null;
       duplicateQuery.employeeName = req.body.employeeName?.trim();
       duplicateQuery.projectId = new mongoose.Types.ObjectId(req.body.projectId);
+      
+      // Include mobileNumber in duplicate check if provided
+      // This differentiates between different people with the same name
+      if (req.body.mobileNumber) {
+        duplicateQuery.mobileNumber = req.body.mobileNumber.trim();
+      } else {
+        // If no mobile number, only check name + date + project
+        // This handles cases where mobile number is not provided
+        duplicateQuery.mobileNumber = { $in: [null, undefined, ''] };
+      }
     }
 
     const existingAttendance = await Attendance.findOne(duplicateQuery);
@@ -148,7 +159,7 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         error: 'Duplicate attendance record',
         message: req.body.employeeId 
           ? 'Attendance for this employee on this date already exists'
-          : `Attendance for "${req.body.employeeName}" on this date in this project already exists. Please update the existing record instead.`
+          : `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`
       });
       return;
     }
