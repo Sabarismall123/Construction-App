@@ -143,13 +143,15 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       
       // Include mobileNumber in duplicate check if provided
       // This differentiates between different people with the same name
+      // IMPORTANT: If mobileNumber is provided, only match records with the SAME mobileNumber
+      // If mobileNumber is NOT provided, only match records with NO mobileNumber
       if (req.body.mobileNumber && req.body.mobileNumber.trim()) {
         const mobileNumber = req.body.mobileNumber.trim();
         // Check for exact match: same name + same mobile number + same date + same project
         duplicateQuery.mobileNumber = mobileNumber;
       } else {
-        // If no mobile number provided, check for records with no mobile number
-        // This prevents duplicates when mobile number is not provided
+        // If no mobile number provided, only check records that also have no mobile number
+        // This allows records with mobile numbers to coexist with records without mobile numbers
         duplicateQuery.$or = [
           { mobileNumber: { $exists: false } },
           { mobileNumber: null },
