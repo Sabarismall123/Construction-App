@@ -249,12 +249,14 @@ const QuickAttendanceForm: React.FC<QuickAttendanceFormProps> = ({ onClose }) =>
         console.error('Failed to mark attendance:', error);
         const errorMessage = error?.message || error?.toString() || 'Failed to mark attendance. Please try again.';
         
-        // Check if it's a duplicate error
+        // Check if it's a duplicate error - show success instead of error
         if (errorMessage.includes('Duplicate attendance record') || errorMessage.includes('already exists')) {
-          toast.error(errorMessage, {
-            duration: 5000,
-            icon: '⚠️'
+          toast.success('Attendance already exists for this date!', {
+            duration: 3000,
+            icon: '✅'
           });
+          // Close the form since attendance already exists
+          onClose();
         } else {
           toast.error(errorMessage);
         }
