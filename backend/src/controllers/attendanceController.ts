@@ -138,11 +138,16 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       // Labour record - check by employeeName + mobileNumber + date + projectId
       // This allows multiple plumbers with same name but different mobile numbers
       duplicateQuery.employeeId = null;
-      // Use case-insensitive matching for employeeName
+      
+      // Use exact case-insensitive matching for employeeName (trimmed)
       const employeeName = req.body.employeeName?.trim();
       if (employeeName) {
-        duplicateQuery.employeeName = { $regex: new RegExp(`^${employeeName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') };
+        // Use $regex with case-insensitive flag for exact match
+        duplicateQuery.employeeName = { 
+          $regex: new RegExp(`^${employeeName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') 
+        };
       }
+      
       duplicateQuery.projectId = new mongoose.Types.ObjectId(req.body.projectId);
       
       // Include mobileNumber in duplicate check if provided
@@ -178,6 +183,27 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
     
     if (existingAttendance) {
       const existingId = existingAttendance._id ? existingAttendance._id.toString() : 'unknown';
+      
+      // Double-check: Verify the match is actually correct
+      const existingName = existingAttendance.employeeName?.toLowerCase().trim();
+      const requestedName = req.body.employeeName?.toLowerCase().trim();
+      const namesMatch = existingName === requestedName;
+      
+      const existingMobile = existingAttendance.mobileNumber?.trim() || '';
+      const requestedMobile = req.body.mobileNumber?.trim() || '';
+      const mobilesMatch = existingMobile === requestedMobile;
+      
+      const existingProjectId = existingAttendance.projectId?.toString();
+      const requestedProjectId = req.body.projectId?.toString();
+      const projectsMatch = existingProjectId === requestedProjectId;
+      
+      // Check if dates are on the same day
+      const existingDate = new Date(existingAttendance.date);
+      existingDate.setHours(0, 0, 0, 0);
+      const requestedDate = new Date(normalizedDate);
+      requestedDate.setHours(0, 0, 0, 0);
+      const datesMatch = existingDate.getTime() === requestedDate.getTime();
+      
       console.log('⚠️ Duplicate attendance found by query:', {
         existingId: existingId,
         existingName: existingAttendance.employeeName,
@@ -191,40 +217,48 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         requestedProject: req.body.projectId
       });
       
-      // Check if names actually match (case-insensitive)
-      const existingName = existingAttendance.employeeName?.toLowerCase().trim();
-      const requestedName = req.body.employeeName?.toLowerCase().trim();
-      const namesMatch = existingName === requestedName;
-      
-      // Check if mobile numbers match
-      const existingMobile = existingAttendance.mobileNumber?.trim();
-      const requestedMobile = req.body.mobileNumber?.trim();
-      const mobilesMatch = existingMobile === requestedMobile;
-      
-      console.log('🔍 Duplicate match details:', {
+      console.log('🔍 Match verification:', {
         namesMatch,
         existingName,
         requestedName,
         mobilesMatch,
         existingMobile,
-        requestedMobile
+        requestedMobile,
+        projectsMatch,
+        existingProjectId,
+        requestedProjectId,
+        datesMatch,
+        existingDate: existingDate.toISOString(),
+        requestedDate: requestedDate.toISOString()
       });
       
-      res.status(400).json({
-        success: false,
-        error: 'Duplicate attendance record',
-        message: req.body.employeeId 
-          ? 'Attendance for this employee on this date already exists'
-          : `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
-        existingRecordId: existingId,
-        existingRecord: {
-          employeeName: existingAttendance.employeeName,
-          mobileNumber: existingAttendance.mobileNumber,
-          date: existingAttendance.date,
-          projectId: existingAttendance.projectId
-        }
-      });
-      return;
+      // Only reject if ALL fields actually match
+      if (namesMatch && mobilesMatch && projectsMatch && datesMatch) {
+        res.status(400).json({
+          success: false,
+          error: 'Duplicate attendance record',
+          message: req.body.employeeId 
+            ? 'Attendance for this employee on this date already exists'
+            : `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
+          existingRecordId: existingId,
+          existingRecord: {
+            employeeName: existingAttendance.employeeName,
+            mobileNumber: existingAttendance.mobileNumber,
+            date: existingAttendance.date,
+            projectId: existingAttendance.projectId
+          }
+        });
+        return;
+      } else {
+        // False positive - log it but allow creation
+        console.warn('⚠️ False positive duplicate match detected! Allowing creation...', {
+          namesMatch,
+          mobilesMatch,
+          projectsMatch,
+          datesMatch
+        });
+        // Continue with creation
+      }
     }
     
     console.log('✅ No duplicate found by query, proceeding with creation');
