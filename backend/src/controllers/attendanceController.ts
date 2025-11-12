@@ -143,17 +143,40 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       
       // Include mobileNumber in duplicate check if provided
       // This differentiates between different people with the same name
-      if (req.body.mobileNumber) {
-        duplicateQuery.mobileNumber = req.body.mobileNumber.trim();
+      if (req.body.mobileNumber && req.body.mobileNumber.trim()) {
+        const mobileNumber = req.body.mobileNumber.trim();
+        // Check for exact match: same name + same mobile number + same date + same project
+        duplicateQuery.mobileNumber = mobileNumber;
       } else {
-        // If no mobile number, only check name + date + project
-        // This handles cases where mobile number is not provided
-        duplicateQuery.mobileNumber = { $in: [null, undefined, ''] };
+        // If no mobile number provided, check for records with no mobile number
+        // This prevents duplicates when mobile number is not provided
+        duplicateQuery.$or = [
+          { mobileNumber: { $exists: false } },
+          { mobileNumber: null },
+          { mobileNumber: '' }
+        ];
       }
     }
 
+    console.log('🔍 Checking for duplicate attendance:', {
+      query: duplicateQuery,
+      employeeName: req.body.employeeName,
+      mobileNumber: req.body.mobileNumber,
+      projectId: req.body.projectId,
+      date: normalizedDate
+    });
+
     const existingAttendance = await Attendance.findOne(duplicateQuery);
+    
     if (existingAttendance) {
+      console.log('⚠️ Duplicate attendance found:', {
+        existingId: existingAttendance._id,
+        existingName: existingAttendance.employeeName,
+        existingMobile: existingAttendance.mobileNumber,
+        existingDate: existingAttendance.date,
+        existingProject: existingAttendance.projectId
+      });
+      
       res.status(400).json({
         success: false,
         error: 'Duplicate attendance record',
@@ -163,6 +186,8 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       });
       return;
     }
+    
+    console.log('✅ No duplicate found, proceeding with creation');
 
     // Ensure attachments are properly formatted as ObjectIds
     let attachments: mongoose.Types.ObjectId[] = [];
