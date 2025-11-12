@@ -173,8 +173,9 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
     const existingAttendance = await Attendance.findOne(duplicateQuery);
     
     if (existingAttendance) {
+      const existingId = existingAttendance._id ? existingAttendance._id.toString() : 'unknown';
       console.log('⚠️ Duplicate attendance found by query:', {
-        existingId: existingAttendance._id,
+        existingId: existingId,
         existingName: existingAttendance.employeeName,
         existingMobile: existingAttendance.mobileNumber,
         existingDate: existingAttendance.date,
@@ -188,7 +189,7 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         message: req.body.employeeId 
           ? 'Attendance for this employee on this date already exists'
           : `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
-        existingRecordId: existingAttendance._id.toString()
+        existingRecordId: existingId
       });
       return;
     }
