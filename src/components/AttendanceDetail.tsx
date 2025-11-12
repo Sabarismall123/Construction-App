@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, User, Image, Download, File } from 'lucide-react';
+import { X, Calendar, Clock, User, Image, Download, File, MapPin } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { Attendance } from '@/types';
 import { formatDate } from '@/utils';
@@ -39,6 +39,9 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
             employeeName: latestAttendance.employeeName || latestAttendance.employeeId?.name || '',
             mobileNumber: latestAttendance.mobileNumber || latestAttendance.employeeId?.mobileNumber || '',
             labourType: latestAttendance.labourType || '',
+            timeIn: latestAttendance.timeIn || '',
+            timeOut: latestAttendance.timeOut || '',
+            location: (latestAttendance as any).location || (latestAttendance as any).address || '',
             // Map attachments - handle both populated objects and IDs
             attachments: (latestAttendance.attachments || []).map((attachment: any) => {
               if (typeof attachment === 'object' && (attachment._id || attachment.id)) {
@@ -237,7 +240,7 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Time In:</span>
-                    <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                    <div className="flex items-center text-sm text-gray-900 dark:text-white font-medium">
                       <Clock className="h-4 w-4 mr-2" />
                       {currentAttendance.timeIn || 'N/A'}
                     </div>
@@ -245,11 +248,22 @@ const AttendanceDetail: React.FC<AttendanceDetailProps> = ({ attendance, onClose
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Out:</span>
-                    <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                    <div className="flex items-center text-sm text-gray-900 dark:text-white font-medium">
                       <Clock className="h-4 w-4 mr-2" />
                       {currentAttendance.timeOut || 'N/A'}
                     </div>
                   </div>
+                  
+                  {/* Location Display */}
+                  {((currentAttendance as any).location || (currentAttendance as any).address) && (
+                    <div className="flex items-start justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Location:</span>
+                      <div className="flex items-start text-sm text-gray-900 dark:text-white max-w-[60%] text-right">
+                        <MapPin className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="break-words">{(currentAttendance as any).location || (currentAttendance as any).address}</span>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Hours:</span>
