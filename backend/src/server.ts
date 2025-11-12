@@ -87,15 +87,24 @@ const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NOD
 if (!isDevelopment) {
   const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '500'), // limit each IP to 500 requests per windowMs (increased from 100)
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000'), // limit each IP to 1000 requests per windowMs (increased from 500)
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
     // Skip rate limiting for health check endpoint
     skip: (req) => req.path === '/health',
+    // Use a more lenient key generator - group by IP but allow bursts
+    keyGenerator: (req) => {
+      // Use IP address for rate limiting
+      return req.ip || req.socket.remoteAddress || 'unknown';
+    },
+    // Don't count failed requests against the limit
+    skipSuccessfulRequests: false,
+    // Don't count failed requests
+    skipFailedRequests: false,
   });
   app.use(limiter);
-  console.log('✅ Rate limiting enabled for production (500 requests per 15 minutes)');
+  console.log('✅ Rate limiting enabled for production (1000 requests per 15 minutes)');
 } else {
   console.log('⚠️  Rate limiting disabled for development');
 }
