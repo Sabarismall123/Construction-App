@@ -296,12 +296,26 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
     // Handle MongoDB duplicate key errors
     if (error.code === 11000 || error.code === 11001) {
       console.error('❌ MongoDB duplicate key error:', error);
-      const duplicateField = error.keyPattern ? Object.keys(error.keyPattern)[0] : 'field';
+      console.error('❌ Error details:', {
+        code: error.code,
+        keyPattern: error.keyPattern,
+        keyValue: error.keyValue,
+        index: error.index
+      });
+      
+      // Check if it's the old unique index on employeeId that should have been dropped
+      if (error.keyPattern && error.keyPattern.employeeId && error.keyPattern.date) {
+        console.error('⚠️ WARNING: Old unique index on employeeId+date still exists in database!');
+        console.error('⚠️ This index needs to be dropped manually in MongoDB Atlas');
+        console.error('⚠️ Index name likely: employeeId_1_date_1');
+      }
+      
+      const duplicateField = error.keyPattern ? Object.keys(error.keyPattern).join('+') : 'field';
       res.status(400).json({
         success: false,
         error: 'Duplicate attendance record',
         message: `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
-        details: `Duplicate key error on ${duplicateField}`
+        details: `Duplicate key error on ${duplicateField}. ${error.keyPattern && error.keyPattern.employeeId ? 'NOTE: Old unique index detected - please drop employeeId_1_date_1 index in MongoDB.' : ''}`
       });
       return;
     }
