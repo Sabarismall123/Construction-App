@@ -48,7 +48,9 @@ app.use(cors({
       'https://construction-app-o7qj.vercel.app',
       'https://construction-app-o7qj-o3h1wiua9-sabaris-projects-383b3041.vercel.app',
       'https://construction-app.vercel.app',
+      'https://construction-website-psi-six.vercel.app',
       /^https:\/\/construction-app.*\.vercel\.app$/,
+      /^https:\/\/construction-website.*\.vercel\.app$/,
       'capacitor://localhost',
       'ionic://localhost',
       'http://localhost'
@@ -85,13 +87,15 @@ const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NOD
 if (!isDevelopment) {
   const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // limit each IP to 100 requests per windowMs
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '500'), // limit each IP to 500 requests per windowMs (increased from 100)
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
+    // Skip rate limiting for health check endpoint
+    skip: (req) => req.path === '/health',
   });
   app.use(limiter);
-  console.log('✅ Rate limiting enabled for production');
+  console.log('✅ Rate limiting enabled for production (500 requests per 15 minutes)');
 } else {
   console.log('⚠️  Rate limiting disabled for development');
 }
