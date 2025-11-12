@@ -161,22 +161,25 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
     }
 
     console.log('🔍 Checking for duplicate attendance:', {
-      query: duplicateQuery,
+      query: JSON.stringify(duplicateQuery),
       employeeName: req.body.employeeName,
       mobileNumber: req.body.mobileNumber,
       projectId: req.body.projectId,
-      date: normalizedDate
+      date: normalizedDate,
+      employeeId: req.body.employeeId
     });
 
+    // First, check if there's an existing record using our duplicate query
     const existingAttendance = await Attendance.findOne(duplicateQuery);
     
     if (existingAttendance) {
-      console.log('⚠️ Duplicate attendance found:', {
+      console.log('⚠️ Duplicate attendance found by query:', {
         existingId: existingAttendance._id,
         existingName: existingAttendance.employeeName,
         existingMobile: existingAttendance.mobileNumber,
         existingDate: existingAttendance.date,
-        existingProject: existingAttendance.projectId
+        existingProject: existingAttendance.projectId,
+        existingEmployeeId: existingAttendance.employeeId
       });
       
       res.status(400).json({
@@ -184,12 +187,13 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         error: 'Duplicate attendance record',
         message: req.body.employeeId 
           ? 'Attendance for this employee on this date already exists'
-          : `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`
+          : `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
+        existingRecordId: existingAttendance._id.toString()
       });
       return;
     }
     
-    console.log('✅ No duplicate found, proceeding with creation');
+    console.log('✅ No duplicate found by query, proceeding with creation');
 
     // Ensure attachments are properly formatted as ObjectIds
     let attachments: mongoose.Types.ObjectId[] = [];

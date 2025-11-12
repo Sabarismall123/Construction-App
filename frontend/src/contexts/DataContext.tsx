@@ -1298,7 +1298,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if ((response as any).success === false) {
         const errorResponse = response as any;
         // If it's a duplicate error, throw it with the error details
-        if (errorResponse.error === 'Duplicate attendance record') {
+        // Check both error field and message for duplicate indicators
+        if (errorResponse.error === 'Duplicate attendance record' || 
+            errorResponse.message?.includes('already exists') ||
+            errorResponse.message?.includes('Duplicate')) {
           throw new Error(errorResponse.message || errorResponse.error);
         }
         throw new Error(errorResponse.error || 'Failed to create attendance');
