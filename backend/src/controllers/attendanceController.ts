@@ -363,7 +363,7 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       });
     }
 
-    const attendanceData = {
+    const attendanceData: any = {
       ...req.body,
       projectName: projectName,
       date: attendanceDate,
@@ -372,6 +372,12 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       attachments: attachments.length > 0 ? attachments : (req.body.attachments || []),
       isApproved: false
     };
+    
+    // CRITICAL: For labor records (no employeeId), explicitly set employeeId to null
+    // This prevents MongoDB unique index conflicts when employeeId is undefined
+    if (!req.body.employeeId) {
+      attendanceData.employeeId = null;
+    }
 
     console.log('💾 Creating attendance with data:', {
       employeeName: attendanceData.employeeName,
