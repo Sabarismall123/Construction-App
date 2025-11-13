@@ -205,6 +205,13 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
     // First, check if there's an existing record using our duplicate query
     const existingAttendance = await Attendance.findOne(duplicateQuery);
     
+    // Log the query result for debugging
+    console.log('🔍 Duplicate query result:', {
+      found: !!existingAttendance,
+      existingId: existingAttendance?._id,
+      query: JSON.stringify(duplicateQuery, null, 2)
+    });
+    
     if (existingAttendance) {
       const existingId = existingAttendance._id ? existingAttendance._id.toString() : 'unknown';
       
@@ -440,7 +447,9 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         code: error.code,
         keyPattern: error.keyPattern,
         keyValue: error.keyValue,
-        index: error.index
+        index: error.index,
+        message: error.message,
+        fullError: JSON.stringify(error, null, 2)
       });
       
       // Check if it's the old unique index on employeeId that should have been dropped
@@ -451,8 +460,11 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         console.error('⚠️ STEPS TO FIX:');
         console.error('   1. Go to MongoDB Atlas: https://cloud.mongodb.com');
         console.error('   2. Navigate to: Cluster → Browse Collections → attendances → Indexes tab');
-        console.error('   3. Find and drop the unique index: employeeId_1_date_1');
-        console.error('   4. Also check for: employeeName_1_date_1_projectId_1 (if it\'s unique, drop it too)');
+        console.error('   3. SCROLL DOWN - the index might be below the visible area');
+        console.error('   4. Look for index with Type: UNIQUE (not REGULAR)');
+        console.error('   5. Find and drop the unique index: employeeId_1_date_1');
+        console.error('   6. Also check for: employeeName_1_date_1_projectId_1 (if it\'s unique, drop it too)');
+        console.error('   7. If you cannot find it, try using MongoDB shell: db.attendances.dropIndex("employeeId_1_date_1")');
       }
       
       const duplicateField = error.keyPattern ? Object.keys(error.keyPattern).join('+') : 'field';
@@ -467,16 +479,22 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         indexName = keys.map(k => `${k}_${error.keyPattern[k]}`).join('_');
       }
       
+      // Check if employeeId is null in the keyValue (for labor records)
+      const isLaborRecord = error.keyValue && (error.keyValue.employeeId === null || error.keyValue.employeeId === undefined);
+      
       res.status(400).json({
         success: false,
         error: 'Duplicate attendance record',
         message: `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
-        details: `Duplicate key error on ${duplicateField}. MongoDB unique index "${indexName}" is blocking this. You MUST drop the unique index in MongoDB Atlas to fix this.`,
+        details: `MongoDB duplicate key error (code ${error.code}) on ${duplicateField}. Unique index "${indexName}" is blocking this. ${isLaborRecord ? 'This is a labor record (employeeId is null), so the unique index should NOT exist.' : ''}`,
+        keyValue: error.keyValue,
         fixInstructions: {
           step1: 'Go to MongoDB Atlas: https://cloud.mongodb.com',
           step2: 'Navigate to: Cluster → Browse Collections → attendances → Indexes tab',
-          step3: `Find and drop the unique index: ${indexName}`,
-          step4: 'Also check for any other unique indexes (they should NOT be unique)',
+          step3: 'SCROLL DOWN - look for index with Type: UNIQUE (not REGULAR)',
+          step4: `Find and drop the unique index: ${indexName}`,
+          step5: 'If not visible, use MongoDB shell: db.attendances.dropIndex("' + indexName + '")',
+          step6: 'Also check for any other unique indexes (they should NOT be unique)',
           note: 'After dropping the index, the backend will automatically create non-unique indexes on restart'
         }
       });
