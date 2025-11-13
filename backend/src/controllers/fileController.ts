@@ -111,6 +111,7 @@ export const uploadFile = async (req: AuthRequest, res: Response): Promise<void>
       success: true,
       data: {
         id: fileAttachment._id,
+        _id: fileAttachment._id, // Add _id for frontend compatibility
         filename: fileAttachment.filename,
         originalName: fileAttachment.originalName,
         mimetype: fileAttachment.mimetype,
@@ -164,6 +165,7 @@ export const uploadMultipleFiles = async (req: AuthRequest, res: Response): Prom
       await fileAttachment.save();
       uploadedFiles.push({
         id: fileAttachment._id,
+        _id: fileAttachment._id, // Add _id for frontend compatibility
         filename: fileAttachment.filename,
         originalName: fileAttachment.originalName,
         mimetype: fileAttachment.mimetype,

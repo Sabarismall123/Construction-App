@@ -300,27 +300,53 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
 
     // Ensure attachments are properly formatted as ObjectIds
     let attachments: mongoose.Types.ObjectId[] = [];
-    if (req.body.attachments && Array.isArray(req.body.attachments) && req.body.attachments.length > 0) {
+    
+    // Handle attachments - they might come as string, array, or JSON string
+    let attachmentsArray: any[] = [];
+    
+    if (req.body.attachments) {
+      // If it's a string, try to parse it as JSON
+      if (typeof req.body.attachments === 'string') {
+        try {
+          attachmentsArray = JSON.parse(req.body.attachments);
+        } catch (e) {
+          // If not JSON, treat as single ID string
+          attachmentsArray = [req.body.attachments];
+        }
+      } else if (Array.isArray(req.body.attachments)) {
+        attachmentsArray = req.body.attachments;
+      } else {
+        // Single value
+        attachmentsArray = [req.body.attachments];
+      }
+    }
+    
+    if (attachmentsArray.length > 0) {
       console.log('📎 Received attachments:', {
-        count: req.body.attachments.length,
-        attachments: req.body.attachments,
-        types: req.body.attachments.map((id: any) => typeof id)
+        count: attachmentsArray.length,
+        attachments: attachmentsArray,
+        types: attachmentsArray.map((id: any) => typeof id),
+        raw: req.body.attachments
       });
       
-      attachments = req.body.attachments
+      attachments = attachmentsArray
         .filter((id: any) => {
           if (!id) return false;
+          // Handle both id and _id fields from file upload response
+          const actualId = id._id || id.id || id;
           // Convert to string first to check validity
-          const idString = id.toString();
+          const idString = actualId.toString();
           const isValid = mongoose.Types.ObjectId.isValid(idString);
           if (!isValid) {
-            console.warn('⚠️ Invalid attachment ID:', id, 'type:', typeof id);
+            console.warn('⚠️ Invalid attachment ID:', id, 'type:', typeof id, 'actualId:', actualId);
           }
           return isValid;
         })
         .map((id: any) => {
+          // Handle both id and _id fields from file upload response
+          const actualId = id._id || id.id || id;
           // Convert to string first, then to ObjectId
-          const idString = id.toString();
+          const idString = actualId.toString();
           return new mongoose.Types.ObjectId(idString);
         });
       
@@ -332,7 +358,8 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       console.log('⚠️ No attachments provided or empty array:', {
         hasAttachments: !!req.body.attachments,
         isArray: Array.isArray(req.body.attachments),
-        length: req.body.attachments?.length || 0
+        length: attachmentsArray.length,
+        raw: req.body.attachments
       });
     }
 
@@ -489,10 +516,32 @@ export const updateAttendance = async (req: Request, res: Response, next: NextFu
     }
 
     // Ensure attachments are properly formatted as ObjectIds if provided
-    if (req.body.attachments && Array.isArray(req.body.attachments)) {
-      req.body.attachments = req.body.attachments
-        .filter((id: any) => id && mongoose.Types.ObjectId.isValid(id))
-        .map((id: any) => new mongoose.Types.ObjectId(id));
+    if (req.body.attachments !== undefined) {
+      let attachmentsArray: any[] = [];
+      
+      // Handle attachments - they might come as string, array, or JSON string
+      if (typeof req.body.attachments === 'string') {
+        try {
+          attachmentsArray = JSON.parse(req.body.attachments);
+        } catch (e) {
+          attachmentsArray = [req.body.attachments];
+        }
+      } else if (Array.isArray(req.body.attachments)) {
+        attachmentsArray = req.body.attachments;
+      } else {
+        attachmentsArray = [req.body.attachments];
+      }
+      
+      req.body.attachments = attachmentsArray
+        .filter((id: any) => {
+          if (!id) return false;
+          const actualId = id._id || id.id || id;
+          return mongoose.Types.ObjectId.isValid(actualId.toString());
+        })
+        .map((id: any) => {
+          const actualId = id._id || id.id || id;
+          return new mongoose.Types.ObjectId(actualId.toString());
+        });
     }
 
     const attendance = await Attendance.findByIdAndUpdate(
