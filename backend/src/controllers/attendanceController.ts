@@ -122,7 +122,7 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
     normalizedDate.setHours(0, 0, 0, 0);
 
     // Check for duplicate attendance record
-    // For labour records (no employeeId), check by employeeName + mobileNumber + date + projectId
+    // For labour records (no employeeId), check by employeeName + mobileNumber + labourType + date + projectId
     // For employee records (with employeeId), check by employeeId + date
     const duplicateQuery: any = {
       date: {
@@ -135,8 +135,8 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       // Employee record - check by employeeId + date
       duplicateQuery.employeeId = new mongoose.Types.ObjectId(req.body.employeeId);
     } else {
-      // Labour record - check by employeeName + mobileNumber + date + projectId
-      // This allows multiple plumbers with same name but different mobile numbers
+      // Labour record - check by employeeName + mobileNumber + labourType + date + projectId
+      // This allows multiple labors with same name but different mobile numbers or different roles
       duplicateQuery.employeeId = null;
       
       // Use exact case-insensitive matching for employeeName (trimmed)
@@ -150,22 +150,45 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       
       duplicateQuery.projectId = new mongoose.Types.ObjectId(req.body.projectId);
       
+      // Include labourType in duplicate check if provided
+      // This differentiates between different roles (e.g., Plumber vs Electrician) with same name
+      if (req.body.labourType && req.body.labourType.trim()) {
+        const labourType = req.body.labourType.trim();
+        duplicateQuery.labourType = { 
+          $regex: new RegExp(`^${labourType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') 
+        };
+      } else {
+        // If no labourType provided, only match records that also have no labourType
+        // This allows records with labourType to coexist with records without labourType
+        duplicateQuery.$and = duplicateQuery.$and || [];
+        duplicateQuery.$and.push({
+          $or: [
+            { labourType: { $exists: false } },
+            { labourType: null },
+            { labourType: '' }
+          ]
+        });
+      }
+      
       // Include mobileNumber in duplicate check if provided
       // This differentiates between different people with the same name
       // IMPORTANT: If mobileNumber is provided, only match records with the SAME mobileNumber
       // If mobileNumber is NOT provided, only match records with NO mobileNumber
       if (req.body.mobileNumber && req.body.mobileNumber.trim()) {
         const mobileNumber = req.body.mobileNumber.trim();
-        // Check for exact match: same name + same mobile number + same date + same project
+        // Check for exact match: same name + same mobile number + same labourType + same date + same project
         duplicateQuery.mobileNumber = mobileNumber;
       } else {
         // If no mobile number provided, only check records that also have no mobile number
         // This allows records with mobile numbers to coexist with records without mobile numbers
-        duplicateQuery.$or = [
-          { mobileNumber: { $exists: false } },
-          { mobileNumber: null },
-          { mobileNumber: '' }
-        ];
+        duplicateQuery.$and = duplicateQuery.$and || [];
+        duplicateQuery.$and.push({
+          $or: [
+            { mobileNumber: { $exists: false } },
+            { mobileNumber: null },
+            { mobileNumber: '' }
+          ]
+        });
       }
     }
 
@@ -173,6 +196,7 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       query: JSON.stringify(duplicateQuery),
       employeeName: req.body.employeeName,
       mobileNumber: req.body.mobileNumber,
+      labourType: req.body.labourType,
       projectId: req.body.projectId,
       date: normalizedDate,
       employeeId: req.body.employeeId
@@ -193,6 +217,10 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
       const requestedMobile = req.body.mobileNumber?.trim() || '';
       const mobilesMatch = existingMobile === requestedMobile;
       
+      const existingLabourType = existingAttendance.labourType?.toLowerCase().trim() || '';
+      const requestedLabourType = req.body.labourType?.toLowerCase().trim() || '';
+      const labourTypesMatch = existingLabourType === requestedLabourType;
+      
       const existingProjectId = existingAttendance.projectId?.toString();
       const requestedProjectId = req.body.projectId?.toString();
       const projectsMatch = existingProjectId === requestedProjectId;
@@ -208,11 +236,13 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         existingId: existingId,
         existingName: existingAttendance.employeeName,
         existingMobile: existingAttendance.mobileNumber,
+        existingLabourType: existingAttendance.labourType,
         existingDate: existingAttendance.date,
         existingProject: existingAttendance.projectId,
         existingEmployeeId: existingAttendance.employeeId,
         requestedName: req.body.employeeName,
         requestedMobile: req.body.mobileNumber,
+        requestedLabourType: req.body.labourType,
         requestedDate: normalizedDate,
         requestedProject: req.body.projectId
       });
@@ -224,6 +254,9 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         mobilesMatch,
         existingMobile,
         requestedMobile,
+        labourTypesMatch,
+        existingLabourType,
+        requestedLabourType,
         projectsMatch,
         existingProjectId,
         requestedProjectId,
@@ -232,18 +265,19 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         requestedDate: requestedDate.toISOString()
       });
       
-      // Only reject if ALL fields actually match
-      if (namesMatch && mobilesMatch && projectsMatch && datesMatch) {
+      // Only reject if ALL fields actually match (including labourType)
+      if (namesMatch && mobilesMatch && labourTypesMatch && projectsMatch && datesMatch) {
         res.status(400).json({
           success: false,
           error: 'Duplicate attendance record',
           message: req.body.employeeId 
             ? 'Attendance for this employee on this date already exists'
-            : `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''} on this date in this project already exists. Please update the existing record instead.`,
+            : `Attendance for "${req.body.employeeName}"${req.body.mobileNumber ? ` (${req.body.mobileNumber})` : ''}${req.body.labourType ? ` - ${req.body.labourType}` : ''} on this date in this project already exists. Please update the existing record instead.`,
           existingRecordId: existingId,
           existingRecord: {
             employeeName: existingAttendance.employeeName,
             mobileNumber: existingAttendance.mobileNumber,
+            labourType: existingAttendance.labourType,
             date: existingAttendance.date,
             projectId: existingAttendance.projectId
           }
@@ -254,6 +288,7 @@ export const createAttendance = async (req: AuthRequest, res: Response, next: Ne
         console.warn('⚠️ False positive duplicate match detected! Allowing creation...', {
           namesMatch,
           mobilesMatch,
+          labourTypesMatch,
           projectsMatch,
           datesMatch
         });
